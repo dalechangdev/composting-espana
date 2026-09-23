@@ -1,0 +1,1780 @@
+Diseño del Sistema de importación y exportación rea-cue
+Versión: 3.11.4
+DATE \@ "MMMM' de 'yyyy" \* MERGEFORMAT noviembre de 2025
+Índice
+TOC \o "1-3" \h \z \u 1.Índice PAGEREF _Toc214439783 \h 2
+2.Introducción PAGEREF _Toc214439784 \h 7
+2.1.Definiciones y abreviaturas PAGEREF _Toc214439785 \h 7
+2.2.objeto PAGEREF _Toc214439786 \h 8
+2.3.alcance PAGEREF _Toc214439787 \h 8
+2.4.Consideraciones previas PAGEREF _Toc214439788 \h 8
+2.5.Arquitectura PAGEREF _Toc214439789 \h 10
+2.5.1.securización y autenticación PAGEREF _Toc214439790 \h 10
+3.Estructura del Interfaz PAGEREF _Toc214439791 \h 12
+3.1.1.Establecer comunicación PAGEREF _Toc214439792 \h 13
+3.1.2.Establecer comunicación productor particular PAGEREF _Toc214439793 \h 14
+3.1.3.exportación de rea PAGEREF _Toc214439794 \h 16
+3.1.4.exportación de cue PAGEREF _Toc214439795 \h 16
+3.1.5.Importación de datos en el cue (crear) PAGEREF _Toc214439796 \h 17
+3.1.6.comprobar estado PAGEREF _Toc214439797 \h 19
+3.1.7.versión PAGEREF _Toc214439798 \h 20
+3.1.8.Estructura del descriptor del registro PAGEREF _Toc214439799 \h 21
+3.1.9.Estructura del descriptor del cuaderno PAGEREF _Toc214439800 \h 21
+4.Anexos PAGEREF _Toc214439801 \h 22
+4.1.Anexo 1. Listado de MENSAJES del SW PAGEREF _Toc214439802 \h 22
+4.1.1.Mensajes del metodo importar (crear) PAGEREF _Toc214439803 \h 22
+4.1.2.Mensajes del metodo comprobar estado PAGEREF _Toc214439804 \h 23
+4.1.3.Mensajes de detalle por cada actividad procesada PAGEREF _Toc214439805 \h 23
+4.1.4.Formato de respuesta PAGEREF _Toc214439806 \h 25
+4.2.Anexo 2. Ejemplos de llamadas y respuestas del SW PAGEREF _Toc214439807 \h 26
+4.2.1.Llamada a descargar datos del registro (exportarrea) PAGEREF _Toc214439808 \h 26
+4.2.2.Respuesta descarga datos del cuaderno (exportarcue) PAGEREF _Toc214439809 \h 31
+4.2.3.Llamada a importar CUE PAGEREF _Toc214439810 \h 33
+4.2.4.Respuesta de comprobar estado PAGEREF _Toc214439811 \h 48
+4.2.5.Respuesta comprobar estado con errores PAGEREF _Toc214439812 \h 49
+4.2.6.Respuesta crear sin errores PAGEREF _Toc214439813 \h 51
+4.3.Anexo 3. TIPOS DE CERTIFICADOS PAGEREF _Toc214439814 \h 52
+4.4.Anexo 4. Implementación de la comunicación tras la no obligatoriedad de campo O en certificado PAGEREF _Toc214439815 \h 53
+4.5.Anexo 5. JsonSchema de CUE PAGEREF _Toc214439816 \h 56
+4.6.Anexo 6. Método de llamada con certificados para el método comunicacion PAGEREF _Toc214439817 \h 56
+4.7.Anexo 7. Uso de certificados por la comunidad autónoma PAGEREF _Toc214439818 \h 62
+4.8.Anexo 8. Pasos que debe realizar CUE comercial para realizar llamada a comunicacionProductor PAGEREF _Toc214439819 \h 63
+4.9.Anexo 9. Ejemplo de funcionamiento del Interfaz para el método comunicacionProductor PAGEREF _Toc214439820 \h 64
+Control de Versiones
+VERSIÓN
+| FECHA
+| CAMBIOS RESPECTO DE LA VERSIÓN ANTERIOR
+| 1.0
+| 20/12/2022
+| Primera versión del documento
+| 1.1
+| 31/01/2023
+| Se añade la exportación del CUE.
+Se actualizan los campos del descriptor añadiendo nuevas actividades y modificando las ya existentes.
+| 1.2
+| 01/02/2023
+| Se actualizan los campos referentes a la nueva versión del descriptor (1.3.2)
+| 1.3
+| 22/02/2023
+| Se añade nuevo descriptor específico para el cuaderno (independiente del REA). Se eliminan los bloques de información de actividades.
+Se revisa el apartado de securización y de contenido del certificado
+| 1.4
+| 23/03/23
+| Se revisa el contenido del descriptor del CUE (v1.0.2) con algunos algunos cambios (marcados en rojo).
+Se añade la información mínima del JWT y ejemplos de llamada a los métodos del SW, nuevos errores de carga de carga de datos y algunos ejemplos de salida de errores.
+| 1.4.2
+| 13/04/23
+| Nuevos códigos de error
+Ejemplos de llamada
+| 1.4.3
+| 28/04/23
+| Nuevos códigos de error
+Ejemplos de llamada
+Nueva versión v1.0.3 de descriptor CUE. Principalmente:
+Nuevos bloques Pastoreo y Cubierta vegetal
+Nuevos campos de nutrientes
+| 1.4.4
+| 15/06/2023
+| Se realizan las siguientes modificaciones en los descriptores:
+En tratamiento FITO se modifica el formato del Tipo de regulador de crecimiento, pasando de number (3) a string (5).
+Para identificar una DGC, se eliminan los campos relativos a la referencia Sigpac (Provincia, Municipio, Agregado, Zona, Polígono, Parcela, Recinto) y se sustituye por el CódigoDGC, que se obtiene en la descarga de los datos del REA, con el objeto de evitar posibles errores de identificación.
+En el descriptor de SIEX, se modifica el formato de nº de árboles para eliminar los decimales, dejando solamente la parte entera: number (6)
+Se revisan las URL de acceso a los métodos del Servidio Web (apartado 3) y se añade el IdCuaderno en la respuesta del apartado 3.1.5
+Se modifican algunos de los ejemplos del Anexo 4.
+| 2.0.0
+| 17/07/2023
+| Nuevas versiones de los descriptores CUE y REA, conforme a los nuevos bloques y/o campos de información incluidos en el documento técnico del 23.05.2023
+Respecto al documento de interfaz
+Se cambia la llamada y funcionalidad de exportarREA
+Nueva opción de borrado en el método de crear actividades
+Se añade nueva información en el listado de errores debido a las peticiones recibidas en el entorno de integración
+Cambios en ejemplos de los anexos conforme a los nuevos descriptores
+Cambio en la URL de llamada a establecer comunicación
+Se añade el anexo 3
+| 2.0.1
+| 08/09/2023
+| Se añaden cambios en el descriptor del REA
+Se añaden cambios en el descriptor del Cuaderno
+UnidadGestora se pone como obligatorio
+Se cambia la descripción del campo SiembraPlantción
+Se añaden observaciones a las etiquetas de UsoSemillaTratada: NumeroLote y NumRegistro
+Se renombra la etiqueta IdCosechaAjena que conenía un error.
+Se elimina la obligatoriedad de los campos Unidad y Cantidad de otrasActuacionesFito
+Se renombran las etiquetas NombreProducto, NumeroInscripcion y EmpresaServicios poniéndolas en mayúsculas.
+Se cambia la llamada al método comunicación inluyendo el nombre del CUE-Comercial.
+Se elimina la obligatoriedad de incluir el campo O en los certificados.
+Se especifica el tipo de certificado (OV)
+Se añade Anexo 4 con la implementación de la comunicación tras eliminar obligatoriedad del campo O del certificado
+| 2.6.0
+| 31/01/2024
+| Se elimina el anexo Personalización de certificados SSL, pero se utiliza el Anexo 3 para concretar los tipos de certificados que se consideran válidos para el uso del IUWS
+Se aclara el origen para el campo Serial number del certificado, en el apartado 3.1.1.
+Se actualizan las versiones de los descriptores de cuaderno y registro a la v2.6.0
+Se actualizan los ejemplos de los anexos
+Se añade el anexo 5 el cual contiene el JsonSchema de CUE
+| 2.6.1
+| 29/04/2024
+| Se cambia la versión del descriptor con los siguientes cambios:
+Se añaden IdAjenaEnergia y Borrar en EnergiaUtilizada
+Se cambian las observaciones de IdDetalleActividadAgraria
+En tratamientos en edificaciones, se corrige el tag de AsesorValidacion (antes ponía una x)
+En plan de abonado se incluye IdAjenaPlan y Borrar. También se incluye la fecha de generación del plan.
+En Comercialización se incluye bloque de DGCs no obligatorio.
+Se añaden DGCs en Comercialización y Venta directa.
+Se quita la observación del campo NumAutorizacion de Fertilización
+| 2.6.2
+| 21/05/2024
+| Se especifica el punto 4.1.4 con el formato de respuesta del interfaz.
+Se actualiza el descriptor del Cuaderno: formatos de DetalleMaterial, Nifempresa de MaterialFertilizante y cambio en las observaciones de los campos de ROMA y REGFER de equipo aplicador de fertilización.
+Se añaden los Anexos 6 y 7 con explicaciones para la gestión (configuración y llamada) de los certificados .
+| 2.9
+| 30/05/2024
+| Se añade un ejemplo de respuesta al método crear.
+Se añaden comentarios relativos al alta de DGCs y edición de cultivo desde el métido crear (punto 3.1.4)
+| 2.9.1
+| 23/07/2024
+| Se cambia el tipo de dato de Tipos de regulador para tratamientos fitosanitarios para cultivos y tratamientos postcosecha en los descriptores de REA y CUE.
+| 2.9.2
+| 30/07/2024
+| Se incluyen los campos de sistema de riego, cantidad, unidad, origen de agua, número de contador y declara buenas prácticas de riego dentro del bloque de fertirrigación en el descriptor, para hacerlos así no obligatorios.
+Se elimina el campo DeclaraBuenasPracticasRiego.
+| 2.9.3
+| 11/09/2024
+| Se cambia el tipo de dato de DosisSiembra y se añade un nuevo campo UnidadDosisSiembra para indicar la unidad en laque se envía la dosis de la siembra.
+| 2.9.4
+| 02/10/2024
+| Se elimina el campo UnidadesSiembra del descriptor de CUE y se añade el campo unidadDosis en el descriptor SIEX (en la estrucutra de cuaderno)
+| 3.3.0
+| 13/12/2024
+| Se incluye el cifrado de NIF en la cabecera especial para dotarla de más seguridad
+Se implementa un nuevo método para indicar la versión con la que trabaja IUWS
+Se cambia el método de exportación, ahora se volcará el contenido completo del cuaderno independientemente del cuaderno que solicite la información.
+En la exportación del cuaderno, se incluye el cuaderno comercial que ha creado la actividad
+Cambio del ejemplo de llamada en el método comprobar estado
+Cambios en el descriptor REA y CUE:
+Cambio del tamaño del dato de ROPO
+Se implementan 4 decimales para la superficie de las DGCs
+Se incluye el año de caché SIGPAC
+| 3.3.1
+| 13/01/2025
+| Se indica el algoritmo criptográfico necesario para el cifrado de NIF en la cabecera especial.
+| 3.3.2
+| 10/04/2025
+| Se corrigen el punto c) del anexo 4.6
+Se incluye una explicación del funcionamiento de la cabecera data-signed
+| 3.11.0
+| 30/06/2025
+| Se añade nuevo método de comunicación para productor individual.
+Se añaden nuevo descriptor CUE, REA y json del descriptor CUE.
+Se añade el CodigoCultivo en la descarga REA e importación CUE para la referencia a las DGCs.
+Se cambia la información referente a los métodos del SW que ya no inlcuyen certificados en sus llamadas.
+Se cambian las URL de los métodos añadiendo /API/ en todos ellos.
+Se añaden los anexos 8 y 9.
+Se elimina la referencia Id_Cuaderno del método exportación cue, dejando ahora {Nº explotación}_{ CIF Gestora }
+Se elimina el mensaje de error 2 por motivos de seguridad.
+| 3.11.1
+| 07/08/2025
+| Se realizan correcciones en el descriptor de CUE:
+Se marca de nuevo producto vegetal como obligatorio en tratamientos post cosecha
+Se marca obligatoria la cantidad en tratamientos post cosecha
+Se elimna la obligatoriedad de número de registro allá donde se puedan incluir también autorizaciones excepcionales
+Se elimina la obligatoriedad de macronutrientes en Fertilización
+Cambio en el tipo de dato de AnimalesTerceros en Pastoreo
+Se cambia la estructura de cubiertas intregrándola en la de DGCs
+| 3.11.2
+| 24/09/2025
+| Se realizan correcciones en el descriptor de CUE:
+En todas las actividades fitosanitarias se elimina el bloque de materia activa pasando este a depender directamente de los productos fitosanitarios.
+En todas las actividades fitosanitarias se fija la cardinalidad 1..n para los productos fitosanitarios.
+En tratamientos fitosanitarios sobre cultivos:
+Producto fitosanitario pasa a ser obligatorio
+Eficacia pasa a ser obligatorio
+En tratamientos sobre semilla:
+Eficacia pasa a ser obligatorio
+Cantidad de producto fitosanitario pasa a ser obligatorio
+Cambia la descripción de superficie cultivada en siembra
+Se añade el campo AnimalesPropios en Pastoreo
+En fertilización cambia la descripción del catálogo de buenas prácticas
+Se elimina la obligatoriedad de cantidad de semilla en siembra.
+Cambio en las observaciones del campo CAExplotacion
+Se elimina la referencia a catálogos para número de repeticiones de actividades con maquinaria.
+| 3.11.3
+| 31/10/2025
+| Se realizan correcciones en el descriptor de CUE:
+En fertilización:
+Los bloques Aplicación material fertilizante y Material fertilizante pierden su obligatoriedad indicando que lo son siempre que no se indique una buena práctica de abonado en verde.
+En fertirrigación, se elimina la obligatoriedad de Cantidad y se incluye nuevo campo de dosis, indicando la obligatoriedad de cumplimentar alguno de los dos.
+En ttos fitosanitarios sobre cultivos, se elimina la obligatoriedad de indicar un producto fitosanitario, indicando que se debe al menos indicar uno u otro medio de defensa.
+En tratamientos fitosanitarios sobre cultivos se indica AplicacionManual como obligatorio.
+En Pastoreo, se indica la obligatoriedad de rellenar al menos una DGC.
+En Otras labores:
+Se indica la obligatoriedad de rellenar al menos una DGC.
+Se reordena el campo de superficie a nivel de DGC.
+En riego, se reordena el campo de superficie a nivel de DG.
+En siembra se indica que todos los valores de maquinaria sean obligatorios.
+Se elimina la referencia de valor de catálogo en los campos de PotenciaMaquinaria.
+En analíticas se cambia la precisión de TipoSustancia
+Se indica la fecha de fin obligatoria en Comercialización, labores culturales, riego y siembra/plantación
+Se añade un formato de respuesta para descarga REA y CUE.
+| 3.11.4
+| 19/11/2025
+| Se realizan correcciones en el descriptor de CUE:
+Se cambia el tipo de dato de TipoMaquinariaUNE a String(12)
+En siembra, se quita la obligatoriedad de numero de lote
+En tratamientos en semilla:
+Se elimina la obligatoriedad de producto fitosanitario y se añade comentario
+Se elimina la obligatoriedad de la eficacia y se añade comentario
+En tratamientos fitosanitarios sobre cultivos, en otras actuaciones fitosanitarias:
+Se elimina la obligatoriedad de cantidad y se añade comentario
+Se elimina la obligatoriedad de unidad y se añade comentario
+| Tabla SEQ Tabla \* ARABIC 1: Control de cambios
+Introducción
+Definiciones y abreviaturas
+Acrónimo/Abreviatura
+| Definición
+| SW
+| Servicio Web
+| JSON
+| acrónimo de JavaScript Object Notation, 'notación de objeto de JavaScript')
+| Base64
+| Base64 es un grupo de esquemas de codificación de binario a texto que representa los datos binarios mediante una cadena ASCII, traduciéndolos en una representación radix-64
+| CA
+| Comunidad Autónoma
+| REA
+| Registro de Explotación Autonómico
+| CUE
+| Cuaderno de Explotación
+| CUE-comercial
+| Cuaderno de Explotación comercial (SW)
+| Entidad
+| Es la empresa habilitada que recopila las autorizaciones de los titulares de las explotaciones para gestionar y compartir sus datos con SIEX.
+| Aplicación
+| Herramienta utilizada para la gestión del cuaderno.
+| Empresa SW
+| Empresa propietaria del CUE-comercial con el que se gestiona un cuaderno o que presta un servicio centralizado utilizando un CUE-comercial externo.
+| JWT
+| JSON Web Token
+| Dominio
+| Un dominio de internet es un nombre único que identifica a una subárea de Internet.
+| IUWS
+| Servicio Web Interfaz Único
+| AACC
+| Autoridades de certificación
+| objeto
+El objeto del presente documento es describir los distintos métodos implementados en el servicio web de REA y CUE para poder facilitar información del registro de explotaciones a otras aplicaciones externas y recibir datos de cuadernos gestionados por las mismas. Para ello, se van a definir los siguientes servicios y métodos:
+Método de exportación de REA. Se podrá exportar la información de una explotación de REA.
+Método de exportación de CUE. Se podrá exportar la información ya grabada en un CUE.
+Importación de datos al cuaderno. Se podrá volcar al CUE información referente a los diferentes cuadernos y actividades registradas en el CUE-comercial.
+Comprobación del estado de procesos de importación de datos al CUE y, en caso de haber sido procesados, del resultado del mismo.
+alcance
+Se trata de suministrar a las empresas que desarrollan y/o gestionan aplicaciones comerciales de cuadernos de explotación, la información necesaria para poder enviar la información de actividades grabadas en los mismos al CUE de la Comunidad Autónoma en el que se encuentren registradas las explotaciones correspondientes, así como recuperar datos de éste.
+Consideraciones previas
+El SW permite la comunicación del CUE-comercial con el CUE y el REA. Esta comunicación tan solo será posible si se dan las siguientes consideraciones previas:
+La explotación asociada al cuaderno con el que se desea interactuar debe estar registrada en el REA con estado Inscrita.
+Si no existe un cuaderno dado de alta en CUE para una determinada explotación, se creará uno con la primera carga de tratamientos que se realice para ésta.
+El tamaño máximo de fichero para poder realizar la carga de los cuadernos será de 2Mb
+La CA deberá realizar un registro previo de las Entidades autorizadas para la gestión y/o envío de información de los cuadernos de los titulares de las explotaciones correspondientes y de las aplicaciones o herramientas comerciales utilizadas para este fin, que deseen comunicarse con el REA y el CUE, así como de las explotaciones asociadas a cada aplicación externa:
+La Entidad deberá estar autorizada para realizar esta operación, a través de la autenticación requerida por la CA.
+La lista de entidades aceptadas debe ceñirse a la publicada por el Ministerio de Industria. En el caso de que alguna empresa manifieste su deseo de utilizar otro, se estudiará cada caso.
+La Empresa SW también deberá estar identificada y asociada a una o varias Entidades y CUE-comerciales. Es decir, dentro del registro de autorizaciones de la CA deberán existir tantas relaciones Entidad – Empresa SW y CUE-comercial como correspondan. Y asociado a esta terna, la relación de NIFs que han autorizado esta gestión.
+Por lo tanto, las explotaciones que se incluyan en el proceso de descarga del REA o de carga en el CUE deberán tener registrada en la CA una autorización expresa por parte del titular hacia la Entidad. Es decir, se debe verificar previamente que las explotaciones que se incluyan en las llamadas al SW, tanto en carga como en descarga, están autorizadas para la entidad que está haciendo uso de este servicio.
+El registro y verificación de dichas autorizaciones, por parte del titular hacia la Entidad habilitada y CUE-comercial, está fuera del alcance de este SW. Lo que sí debe hacer el SW, es validar que existe esa autorización antes de facilitar la carga o descarga de información de una explotación.
+Además, las Empresas SW que deseen comunicarse con el SW, deben comunicar a la Entidad o a la CA los dominios a través de los que se comunicará con el SW, para cada tipo de CUE-comercial que utilice.
+Las Empresas de SW que deseen comunicarse con el SW a través del acceso de productor particular, deben comunicar a a Entidad o a la CA una URL de Callback para enviar el token de vuelta.
+En las CCAA deberá existir un registro similar a éste:
+Entidad
+| Empresa SW
+| CUE-comercial
+| Dominio
+| URL Callback
+| NIF
+| NIF
+| Nombre
+| xxxx.xxxx.es
+| xxxxx
+Y para cada fila de la tabla anterior, se deben registrar los NIFs de las explotaciones que se van a tramitar con cada una de ellas.
+El protocolo de cómo realizar todo el registro de autorizaciones comentado en los párrafos anteriores no es objeto de este documento.
+Arquitectura
+El servicio web de REA-CUE es del tipo REST. La comunicación se realizará a través de objetos JSON.
+securización y autenticación
+Con el objeto de cumplir con el Esquema Nacional de Seguridad (ENS) de nivel medio, se propone llevar a cabo una securización del SW basada en certificados de persona jurídica, más un token de sesión de tipo JWT.
+Dado que se trata de intercambiar información entre las herramientas comerciales, que permiten gestionar cuadernos digitales, y los CUE de las CCAA, los servidores de aplicaciones correspondientes a cada una de ellas (en los cuales estarán alojadas dichas aplicaciones) deberán tener instalado un certificado válido (ver Anexo 3) emitido por un Prestador Cualificado de Servicios de Confianza, con el fin de establecer una comunicación segura entre ambos.
+Respecto a las diferentes opciones de configuracion o explotación de estas herramientas, se van a considerar las dos opciones siguientes, incluyendo la posibilidad de utilizar ambas para una misma entidad:
+Empresa habilitada que utiliza una herramienta comercial instalada en un servidor propio (“instalación individual para cada entidad cliente”).
+Empresa habilitada que utiliza una herramienta comercial y un servicio de hosting para la misma. Es decir, en este caso el servidor de aplicaciones no pertenece a la emprea habilitada sino a la Empresa SW (“servicio centralizado para todos los clientes”).
+Para el caso de aplicaciones de escritorio que puedan utilizarse en modo stand-alone, se deberá poder generar el fichero JSON correspondiente y enviar a través de la Empresa SW, que es la que debe desarrollar el cliente del SW para poder realizar esta comunicación.
+Por lo tanto, se plantean tres escenarios diferentes al recibir la llamada de una aplicación cliente, en función de la configuración de la terna Entidad – Empresa SW - servidor:
+Si se trata de una instalación en cliente, el certificado podrá contener el dominio y el identificador de la entidad, por lo que en la parte servidora se puede verificar qué explotaciones están autorizadas.
+Si se trata de un servicio centralizado, es decir que la misma herramienta comercial da servicio a diferentes entidades, el certificado podrá contener el dominio y el identificador de la Empresa SW. Pero, teniendo en cuenta que ésta puede gestionar N cuadernos de diferentes Entidades, se deberá incluir en el descriptor del cuaderno, como un campo más, la Entidad habilitada para la gestión de las explotaciones incluidas en la misma. Además, solo se podrán enviar datos de cuadernos de una misma Entidad en cada llamada.
+Aplicación
+| | Servicio centralizado
+| La Empresa SW deberá disponer un certificado válido (ver Anexo 3) , el cual podrá contener el identificador de la misma y el dominio correspondiente a la herramienta, pero deberá incluir en el descriptor del cuaderno el identificador de la Empresa habilitada.
+| Instalación individual en la entidad
+| La entidad habilitada deberá disponer un certificado válido (ver Anexo 3). Con ello se podrá validar tanto la Entidad como el servidor o dominio que realiza la llamada.
+| Dado que el Interfaz Único (IUWS) tiene que adaptarse a las diferentes configuraciones de todas las CCAA, y en base a la experiencia obtenida a través del entorno de integración se van indican en los Anexos 6 y 7 las acciones y configuraciones, que deberán llevar por una parte los cuadernos comerciales y por otra parte cada una de las CCAA para una correcta comunicación.
+Nota: En esta primera fase no se ha analizado en detalle el interfaz para el caso de utilizar a modo individual una app en dispositivo móvil, dado que se deben valorar las diferentes opciones. En el caso de conectarse a un servidor centralizado, la operativa final sería similar a la ya comentada.
+Estructura del Interfaz
+Mediante esta interfaz definimos los métodos del servicio web de CUE y REA.
+El esquema de funcionamiento de las interfaces de exportación de REA e importación de CUE son los siguientes:
+Los elementos que se muestran en el gráfico son los siguientes:
+REA: Son los distintos registros de explotaciones.
+CUE: Son los distintos cuadernos de explotación.
+Aplicaciones comerciales: Serán las aplicaciones CUE-comercial (o cualquier entidad externa que quiera obtener datos de REA), que quieran volcar el contenido de sus cuadernos en el CUE.
+Los SW y métodos a usar son los siguientes:
+Establecer comunicación: llamada securizada entre los servidores
+Establecer comunicación productor individual: llamada para obtener token directamente por un usuario.
+ExportaREA_WS: Método de exportación de REA. Se podrá exportar la información de una explotación de REA.
+ExportaCUE_WS: Método de exportación de CUE. Se podrá exportar la información de un cuaderno de CUE.
+ImportaCUE_WS: Importación de datos en el CUE. Se podrá volcar al CUE información referente a los diferentes cuadernos y actividades registradas en el CUE-comercial.
+Comprobar_estado: Comprobación del estado de procesos de ficheros enviados al SW mediante el método crear y, en caso de haber sido procesados, del resultado del mismo.
+Establecer comunicación
+Este método permite poder realizar una llamada securizada a través de JWT al resto de métodos.
+A través de este método, las herramientas digitales podrán autenticarse contra el servidor, generándose en este un JWT que será el usado para autenticar y securizar las demás llamadas.
+El flujo propuesto combinando certificados con JWT, sería el siguiente:
+De acuerdo a esto, los pasos serían los siguientes:
+La parte cliente invoca al SW para su autenticación, mediante un certificado válido (ver Anexo-3)
+El SW deberá validar que el dominio del certificado está autorizado.
+En el caso de que sea correcto, el servidor genera el token JWT y se envía al cliente
+A partir de este punto, todas las comunicaciones cliente y servidor correspondientes a los métodos (exportación rea, exportación de cue, importación de datos en el cue y comprobar estado) deberán inlcuir el token JWT (ver Anexo-4) , ya no siendo necesarias las siguientes cabeceras
+certificate-sscc
+data-signed
+Tampoco será necesario incluir el certificado en éstas llamadas, ya que con la comunicación segura SSL y con la información generada en el JWT se podrá realizar los procesos de autenticación y validación de la petición
+La llamada al método es la siguiente:
+https://servidor:puerto/IUWS/api/comunicacion/nombreAppCue
+Los parámetros mínimos del payload del JWT serán los siguientes:
+Aplicación (sub): nombre de la aplicación o herramienta comercial que está realizando la comunicación.
+Tiempo de vida (exp): se fijará un tiempo de validez para realizar las comunicaciones.
+Se deberán incorporar los datos provienientes del certificado incluido en la petición de comunicación. En función del certifcado usado podrán venir, uno, los dos de lo siguientes campos:
+CIF (cif). De la empresa gestora que hace la petición.
+Dominio (dominio) desde el equipo que hace la petición
+Establecer comunicación productor particular
+Este método permite poder realizar una llamada securizada a través de JWT al resto de métodos.
+A través de este método el usuario final, a través de las herramientas digitales, podrá autenticarse contra el servidor, generándose en este un JWT que será el usado para autenticar y securizar las demás llamadas.
+El flujo propuesto, sería el siguiente:
+De acuerdo a esto, los pasos serían los siguientes:
+La parte cliente invoca al SW para su autenticación, indicando en la llamada el nombre del CUE comercial y un identificador.
+El SW intercepta la llamada y redirige al productor a la aplicación de validación del mismo en el OP.
+El productor individual se debe validar en la plataforma.
+Si la validación es correcta, el SW generará el token JWT.
+A partir de este punto, todas las comunicaciones cliente y servidor correspondientes a los métodos (exportación rea, exportación de cue, importación de datos en el cue y comprobar estado) deberán inlcuir el token JWT (ver Anexo-4) , ya no siendo necesarias las siguientes cabeceras
+certificate-sscc
+data-signed
+Tampoco será necesario incluir el certificado en éstas llamadas, ya que con la comunicación segura SSL y con la información generada en el JWT se podrá realizar los procesos de autenticación y validación de la petición.
+Este método está destinado a los productores particulares, por tanto, una vez que se valide el productor particular en la aplicación de autenticación del OP, se debe comprobar que ese productor particular deberá ser titular de una explotación. En caso que no se cumpla este requisito, se rechazará la petición de comunicación.
+La llamada al método es la siguiente:
+https://servidor:puerto/IUWS/api/comunicacionProductor/nombreAppCue/peticion
+Los parámetros de la llamada son los siguiente:
+nombreAppCue: nombre del CUE comercial llamante.
+peticion: identificador único para identificar el token en la vuelta al CUE comercial.
+Los parámetros mínimos del payload del JWT serán los siguientes:
+Aplicación (sub): nombre de la aplicación o herramienta comercial que está realizando la comunicación.
+Tiempo de vida (exp): se fijará un tiempo de validez para realizar las comunicaciones.
+Para los productores particulares, no se exige el uso de certificados en la petición de comunicación, esté método llamará a la aplicación desplegada en cada OP de validación.
+Por tanto, una vez validado el productor particular, en el token de sesión JWT se tendrá que incluir su NIF
+NIF (cif). Del productor particular.
+Se puede ver un ejemplo de llamada de CUE en el Anexo 8.
+Se puede ver un ejemplo de funcionamiento del interfaz en el Anexo 9.
+exportación de rea
+A través del método de exportación de datos de explotaciones se podrán suministrar
+los datos de las explotaciones Inscritas.
+La llamada al método es la siguiente, con los parámetros del NIF del titular, y el NIF de la empresa habilitada
+https://servidor:puerto/IUWS/api/exportarREA/{NIF titular}_{CIF Gestora}
+En el caso de productor particular, el valor del campo CIF_Gestora no deberá vernir informado.
+Ejemplo de llamada:
+https://servidor:puerto/IUWS/api/exportarREA/53442255P_V83192450
+Los datos que se exportan son los que se incluyen en el descriptor del contenido mínimo de SIEX, SIEX AD-BdcSix-DS-DiseñoRegistroREA.xlsx, siempre referido a su última versión publicada.
+exportación de cue
+A través del método de exportación del CUE se podrán suministrar los datos de los cuadernos solicitados, siempre y cuando se disponga de autorización para ello.
+La llamada al método es la siguiente:
+https://servidor:puerto/IUWS/api/exportar/{Nº explotación}_{CIF Gestora}
+En el caso de productor particular, el valor del campo CIF_Gestora no deberá vernir informado
+Ejemplo de llamada:
+https://servidor:puerto/IUWS/api/exportar/ES130000008847_V83192450
+Los parámetros de la llamada serán (separados por _ ):
+Explotación
+NIF Empresa habilitada (si aplica)
+Los datos que se exportan son los que se incluyen en el descriptor del contenido mínimo del CUE, BdcSix-DS-DiseñoCUE.xlsx, siempre referido a su última versión publicada.
+El método de exportación vuelca el contenido completo de las actividades de la explotación independientemente del CUE que haya solicitado la información.
+Las actividades se marcarán con el nombre del CUE que las importó para una lectura más sencilla por parte del CUE que lo solicite.
+Importación de datos en el cue (crear)
+A través de los métodos de importación, se podrá:
+Volcar actividades nuevas del CUE-comercial al CUE de la CA.
+Modificación de actividades ya existentes en el CUE de la CA.
+Borrado de actividades ya existentes en el CUE de la CA.
+Alta de DGCs desde el CUE comercial
+Cambio de cultivos desde el CUE comercial
+La llamada al método es la siguiente:
+https://servidor:puerto/IUWS/api/crear/
+Al cual se invoca con un JSON que incluirá las actividades a importar en el cuaderno, y que se detalla más abajo, según el contenido mínimo del cuaderno, indicado en el apartado estructura del descriptor del cuaderno.
+En el caso de productor particular en el Json de carga de actividades, se debe informar el campo UnidadGestora como el Nif del titular.
+Este método es de tipo POST.
+El funcionamiento del método es el siguiente:
+Se realiza una llamada con 1 o N cuadernos, cada uno de ellos contendrá 1 explotación con 1 o N actividades.
+Si no existe el cuaderno en CUE para la explotación indicada, se creará uno con la primera carga de tratamientos que se realice para ésta.
+En caso de que existan varios cuadernos abiertos (para cuadernos anuales o por campaña), la carga se realizará en el cuaderno correspondiente a las fechas de las actuaciones.
+Si se requiere carga de actividades relacionadas (por ejemplo, un tratamiento de semilla con una siembra), estas deden ir juntas en el mismo fihcero de carga.
+El método de importación funciona de la siguiente manera:
+Se evalua que el JSON tiene la forma correcta.
+Se evaluan las credenciales.
+En caso de que las credenciales sean incorrectas o el JSON no esté bien formado, el método devuelve un error.
+En caso de que los puntos anteriores sean correctos, se almacena el JSON indicado y se devuelve un número de petición.
+A través de este número de petición (y del método comprobarEstado, indicado más abajo) se podrá saber si el contenido del JSON ha sido incluido en el cuaderno (parcial o totalmente) y el estado de sus Actividades.
+Antes de proceder al tratamiento de las explotaciones incluidas en el fichero JSON, se verficará si están autorizadas para dichas credenciales.
+Respecto a las actividades incluidas en cada explotación, en el JSON se solicita un identificador único por cada actividad, generado por la herramienta que envía los datos al CUE. Este identificador tiene los siguientes propósitos:
+La carga utilizará este identificador para indicar, en caso de error, qué actividad ha fallado en la carga.
+Si un identificador ya se encuentra informado en el CUE de una anterior carga, se entenderá que lo que se está realizando es una edición de la actividad, y se actualizarán los datos del CUE con los nuevos incluidos en el JSON.
+En caso de que la actividad ya se haya enviado a SIEX, no sé podrán realizar modificaciones sobre ella.
+Se usará junto con el campo “Borrar” para realizar un borrado de la actividad indicada.
+Respecto a las DGCs que se quieran dar de alta, en el JSON se solicita un identificador único por cada DGC, generado por el CUE comercial que envía los datos al CUE. Este identificador tiene los siguientes propósitos:
+La carga utilizará este identificador para indicar, en caso de error, qué DGC ha fallado en la carga.
+En caso de que la DGC ya se haya enviado y se envíe de nuevo, el servicio devolverá un error.
+El cambio de cultivo se realizará sobre una DGC ya existente en el REA o sobre una dada de alta anteriormente desde el CUE comercial. Esto implica. que se debe facilitar el identificador correspondiente de dicha DGC.
+NOTA: El CUE seguirá trabajando con un identificador interno para cada actividad, pero la comunicación con el CUE-comercial se realizará con el identificador ajeno, es decir, el enviado por esta herramienta, tanto en la importación como en la exportación de datos y/o mensajes del SW.
+Los datos que se importan son los que se incluyen en el descriptor de cuaderno, BdcSix-DS-DiseñoCUE.xlsx, siempre referido a su última versión publicada.
+comprobar estado
+Este método permite comprobar el estado en que se encuentra la petición que se ha realizado con el resto de operaciones del SW.
+La llamada al método es la siguiente:
+https://servidor:puerto/IUWS/api/comprobarEstado/{Id Petición}
+Ejemplo de llamada:
+https://servidor:puerto/IUWS/api/comprobarEstado/256
+Debido a que el volcado de las actividades no se va a realizar de forma online, sino que se usarán procesos batch dentro del CUE, se diseña este método para comprobar en qué estado se encuentra la solicitud en la carga de los datos incluidos en el JSON.
+Debido a esto, si al realizar la petición, aún no se han cargado las actividades en CUE, se devolverá un mensaje del tipo
+{"resultado": {
+"codigoResultado": "OK",
+"detalleOperacion": {
+"codigo": 3,
+"descripcion": "El pedido xxxxx está pendiente de procesamiento"
+}
+}}
+Una vez que se haya procesado, y se consulte su estado, se obtendrá un resultado indicando si se ha procesado correctamente y/o ha habido incidencias durante el proceso.
+En el caso de que la carga haya sido correcta, se devolverá el JSON cargado, con unos nuevos campos, a nivel de actividad, que se indican a continuación:
+esValida: booleano que indica si la actividad se ha cargado de manera correcta.
+idCuaderno: Campo que indica en qué cuaderno se ha creado la actividad. Se usará este identificador para pedir la exportación del cuaderno en el servicio web.
+En el Anexo 1 se describen los diferentes mensajes que devuelve el SW en función de la operación a realizar o ya procesada.
+En el Anexo 2 se adjuntan algunos ejemplos de llamada para el envio de datos (Importar) y de respuesta del sistema una vez procesado el fichero.
+versión
+A través de este método se podrá consultar la versión actual con la que está trabajando el interfaz.
+Este método no está securizado.
+La llamada al método es la siguiente:
+https://servidor:puerto/IUWS/api/version
+Estructura del descriptor del registro
+El siguiente fichero de Excel, muestra la estructura y definición de los datos a exportar del REA.
+Este descriptor solamente se debe utilizar para la exportación de datos del Registro (no del cuaderno).
+Estructura del descriptor del cuaderno
+El siguiente fichero de Excel, muestra la estructura y definición de los datos a exportar e importar en el cuaderno de explotación.
+Anexos
+Anexo 1. Listado de MENSAJES del SW
+La siguiente tabla muestra los posibles resultados que se pueden obtener del proceso de importación de datos en el CUE, tanto a nivel general del SW, como de cada una de las actividades que se incluyan en el fichero JSON.
+Mensajes del metodo importar (crear)
+Este método se debe utilizar para el envío de un fichero con datos de uno o varios cuadernos. Devuelve el ID del Proceso
+Resultado
+| Código
+| Significado
+| OK
+| El fichero se ha recibido correctamente para ser procesado (devuelve el ID del proceso para poder comprobar el estado posteriormente).
+| ERROR
+| Errores de formato del fichero JSON o de credenciales.
+Mensajes 1 y 2 de la lista.
+| ERROR_VALIDAR_ESTRUCTURA
+| 1
+| Los datos enviados no se ajustan al formato esperado para importar los datos en el CUE.
+| ERROR_VALIDAR_CREDENCIALES
+| 2
+| Este error, se producirá cuando se detecte que la llamada no está autorizada por los siguientes motivos:
+Certificado no válido, no cumple con las exigencias
+Dominio del certificado no registrado en el sistema
+Nombre del cuaderno comercial no registrado
+CIF empresa habilitada no registrada
+Falta token de sesión
+Token de sesión no válido
+Nif titular de la explotación no autorizado
+Cuaderno comercial no autorizado en el dominio
+| ERROR_VALIDAR_OGESTOR
+| 16
+| No se ha podido validar el organismo pagador
+| En caso de que el usuario no pueda ser autenticado y autorizado, la aplicación devolverá un 401 con el mensaje “acceso no autorizado”.
+Mensajes del metodo comprobar estado
+Se debe enviar el ID del proceso obtenido en la llamada el método CREAR
+Resultado
+| Código
+| Significado
+| PENDIENTE DE PROCESAR
+| FICHERO PROCESADO
+| OK
+| OK
+| Si todas las actividades tienen resultado con éxito.
+| PARCIAL
+| PARCIAL
+| Si hay errores en alguna actividad.
+| FALLO
+| FALLO
+| Si todas las actividades tienen errores.
+| Mensajes de detalle por cada actividad procesada
+Devuelve el ID de cada actividad procesada, asi como el ID del cuaderno sobre el que se ha cargado. Si se quiere modificar alguno de los datos enviados para una actividad, se debe volver a llamar al método crear rellenando el campo identificador de cada blooque con el ID obtenido.
+Resultado
+| Código
+| Significado
+| EXITO
+| 3
+| Actividad grabada correctamente
+| ERROR_EXP_NO_ASIGNADA
+| 4
+| Error que se produce al validar si la entidad no tiene asignada la Explotación que desea cargar.
+| ERROR_VALIDAR_CAMPO
+| 5
+| Algún campo no cumple con los valores que se espera.
+Se notificará al usuario, el campo que no cumple la validación y el motivo del incumplimiento.
+Motivos de incumplimiento:
+Valor no se encuentra en el catálogo correspondiente
+Formato en fechas erróneas
+Tamaños de campos de texto no válidos
+Parte entera y decimal de los números no válida.
+Superficies, cantidades negativas
+Etc.
+| ERROR_VALIDAR_MAQUINARIA
+| 6
+| El número de inscripción de la maquinaria no se puede localizar en el SW de ROMA
+| ERROR_VALIDAR_ASESOR
+| 7
+| El código del asesor, no ha sido posible localizarlo en el SW ROPO
+| ERROR_VALIDAR_TITULAR_EXPLOTACION
+| 8
+| El titular que manda el cuaderno comercial, no coincide con el titular registrado en REA
+| ERROR_VALIDAR_FALTAN_CAMPOS
+| 9
+| Este error indica que, en las llamadas de las operaciones del servicio web, faltan campos necesarios para su ejecución.
+En el descriptor se indican cuáles son los campos obligatorios.
+| ERROR_VALIDAR_DGC_EXPLOTACION
+| 10
+| Este error se produce en dos situaciones
+Cuando la superficie que informa el cuaderno comercial es superior a la declarada en sigpac
+Cuando no existe la DGC especificada
+| ERROR_VALIDAR_CONTACTE_ADMINISTRADOR
+| 11
+| Error genérico
+| ERROR_VALIDAR_REFERENCIA_SIGPAC1
+| 12
+| El cuaderno comercial, no manda bien la codificación de los recintos sigpac, alguno de ellos es nulo
+| ERROR_VALIDAR_DCU_EXPLOTACION
+| 13
+| Error que se produce cuando no ha sido capaz de encontrar un cultivo a partir de los datos que proporciona el cuaderno comercial:
+Recinto Sigpac
+Producto
+Variedad
+Sistema de riego
+Fechas de cultivo
+| ERROR_VALIDAR_CERRADA
+| 14
+| La actividad que se intenta editar se ecuentra cerrada o enviada a SIEX
+| ERROR_VALIDAR_EGESTORA
+| 15
+| En el envío hay expedientes de varias empresas habilitadas (debe hacerse un envío por empresa habilitada)
+| ERROR_NO_MODIFICAR
+| 17
+| Indica que no se puede modificar la actividad por estar en estado cerrada
+| ERROR_NO_BORRAR
+| 18
+| Indica que no se puede borrar la actividad por estar en estar en estado cerrada
+| ERROR_IDCUE
+| 19
+| Indica que el id pasado es incorrecto
+| Formato de respuesta
+La respuesta tendrá el siguiente formato:
+"resultado":{
+"codigoResultado": "",
+"detalleImportacion": [{
+"codigo": código respuesta,
+"descripcion": "Descripción"
+}]
+Para la llamada a comunicación:
+"resultado":{
+"codigoResultado": "OK",
+"detalleImportacion": [{
+"codigo": código respuesta,
+"descripcion": "JWT cargado"
+}]
+Para la llamada a crear:
+"resultado":{
+"codigoResultado": "OK/FALLO",
+"detalleImportacion": [{
+"codigo": código respuesta en caso de error o el ID de la petición en caso de OK
+"descripcion": "Descripción de la respuesta"
+}]
+Para la llamada a comprobar estado:
+"resultado":{
+"codigoResultado": "OK/FALLO/PARCIAL",
+"detalleImportacion": [{
+"codigo": código respuesta,
+"descripcion": "Descripción de posibles errores"
+}],
+“CUADERNO”: JSON del cuaderno cargado
+}
+Para la llamada a descarga (REA y CUE):
+"resultado":{
+"codigoResultado": "OK ",
+"detalleOperacion": [{
+"codigo": código respuesta,
+"descripcion": "Descripción"
+}],
+“CUADERNO”/”explotacionREA”: JSON del cuaderno o REA cargado
+}
+Anexo 2. Ejemplos de llamadas y respuestas del SW
+Los ejemplos incluidos en los siguientes apartados pueden no corresponderse con la v2.6 del descriptor, por lo que deben tomarse como tales ejemplos, ya que aún no se pueden generar con dicha estructura.
+Llamada a descargar datos del registro (exportarrea)
+{
+"EXPLOTACION": [
+{
+"Codigo_SIEX": "null",
+"CA_Explotacion": "13",
+"Codigo_Rea": "ES130000008846",
+"Datos_Explotacion": {
+"DatosGeneralesExplotacion": {
+"Fregistro": "10/07/2023",
+"Joven_Agricultor": true,
+"Inicio_ActividadAgraria": false,
+"Autocontrol": true,
+"VentaDirecta": false,
+"SRID": "4258"
+},
+"GerenteExplotacion": {
+"ID_JE": "75227033J",
+"Extran_JE": false,
+"Nombre_JE": "ORPUNEO",
+"Apellido1_JE": "TITAZ",
+"Apellido2_JE": "PENPUR",
+"Sexo_JE": "V",
+"Tlfno_JE": 580327170,
+"TlfnoMovil_JE": 656322938,
+"email_JE": "sfh@drio.es",
+"Fnacimiento_JE": "01/09/1979",
+"FormAgraria_JE": 3
+},
+"ActividadesSecundarias": {
+"ActividadSecundaria": [
+{
+"tipoActividadSecundaria": 3,
+"tipoProducto_o_Actividad": 1,
+"Producto_o_Actividad": 3
+},
+{
+"tipoActividadSecundaria": 1,
+"tipoProducto_o_Actividad": 2,
+"Producto_o_Actividad": 5
+},
+{
+"tipoActividadSecundaria": 5,
+"tipoProducto_o_Actividad": 1,
+"Producto_o_Actividad": 2
+},
+{
+"tipoActividadSecundaria": 4,
+"tipoProducto_o_Actividad": 1,
+"Producto_o_Actividad": 1
+},
+{
+"tipoActividadSecundaria": 2,
+"tipoProducto_o_Actividad": 1
+}
+]
+},
+"RendimientoEconomico": {
+"anyoIngBrutos": 2022,
+"ingBrutosTitular": 6000,
+"ingBrutosActividadAgraria": 100,
+"ingBrutosActividadSecundaria": [
+{
+"tipoActividadSecundaria": 1,
+"ingBrutosActividadSecundaria": 1000
+}
+]
+},
+"Cotitular": {
+"ID_Cotit": "96221257K",
+"Extran_Cotit": false,
+"Nombre_Cotit": "nombre prueba",
+"Apellido1_Cotit": "apprimer",
+"Apellido2_Cotit": "apsegun",
+"Tlfno_Cotit": 123456789,
+"email_Cotit": "dgdf@fjfj.es",
+"CodProv_Cotit": "28",
+"CodMunicipio_Cotit": "079",
+"Direccion_Cotit": "Calle asuncion, Número 4",
+"CodPostal_Cotit": 28044
+},
+"RegimenesDeCalidad": [
+{
+"tipoCalidad": 373
+},
+{
+"tipoCalidad": 235
+}
+],
+"produccionIntegrada": false
+},
+"Titular": [
+{
+"ID_Titular": "75227033J",
+"Extran_Titular": false,
+"DatosGeneralesTitular": {
+"Nombre_Titular": "ORPUNEO",
+"Apellido1_Titular": "TITAZ",
+"Apellido2_Titular": "PENPUR",
+"Sexo_Titular": "V",
+"Tlfno_Titular": 656322938,
+"Email_Titular": "sfh@drio.es",
+"Fnacimiento_Titular": "01/09/1979",
+"CodProv_Titular": "46",
+"CodMunicipio_Titular": "060",
+"Direccion_Titular": "Calle IFGENIT, Número 36, Bloque 1",
+"CodPostal_Titular": 46814
+},
+"Representante": {
+"ID_Repres": "05147176Y",
+"Extran_Repres": false,
+"Nombre_Repres": "prueba",
+"Apellido1_Repres": "CAROL",
+"Apellido2_Repres": "TOLEINTE",
+"Email_Repres": "ytwhxq@prueba.es",
+"CodProv_Repres": "28",
+"CodMunicipio_Repres": "085",
+"Direccion_Repres": "Calle LLINE BA ERBULIS, Número LLIN, Bloque LL, Portal LL, Escalera LL, Planta LLI, Puerta LLIN",
+"CodPostal_Repres": 28935,
+"Tlfno_Repres": 894845183
+},
+"Responsable": {
+"identificador": "75227033J",
+"indExtranjero": false,
+"nombre": "ORPUNEO",
+"apellido1": "TITAZ",
+"apellido2": "PENPUR",
+"direccion": "Atajo corto, Número 1",
+"provincia": "28",
+"municipio": "079",
+"codPostal": 28066,
+"pais": "ESP",
+"telefono": 580327170,
+"email": "sfh@drio.es"
+}
+}
+],
+"DGC": [
+{
+"Provincia": "28",
+"Municipio": "072",
+"Agregado": "000",
+"Zona": "00",
+"Poligono": "900",
+"Parcela": "09000",
+"Recinto": "00020",
+"codigoDGC": -19125,
+"DatosGeneralesDGC": {
+"RefCatastral": "",
+"indParcelaSIGPAG": false,
+"Ind_CC_No_SIGPAC": false,
+"Ind_PastosComun": false,
+"Ind_DehesasComun": false,
+"RegTenencia": 1,
+"Extran_arrendador": false,
+"Superficie_DGC": 0
+},
+"Cultivos": [
+{
+"cultivo": 1,
+"Variedad": 4,
+"fechaInicioCultivo": "20/06/2023",
+"SistemaExplotacion": "S",
+"ProducInteg": false,
+"Destino": 1
+}
+],
+"PuntosAgua": {
+"masasAgua": false,
+"puntosExtraccionAgua": false
+}
+}
+]
+}
+]
+}
+Respuesta descarga datos del cuaderno (exportarcue)
+{
+"CUADERNO": [{
+"CodigoSIEX": "933",
+"CAExplotacion": "12",
+"IDTitular": "68554421P",
+"IdCuaderno": 89,
+“UnidadGestora”:” Q4197553C”,
+"CodigoRea": "ES130000000016",
+"ActividadesExplotacion": {
+"TratamientosPostCosecha": [{
+"IdAjenaTratamPostco":234,
+"FechaActuacion": "25/02/2023",
+"Producto": 1,
+"Cantidad": 293.34,
+"ProblematicaFito": {
+"Enfermedades": {
+"TipoEnfermedad": 2
+},
+"ArtropodosGasteropodos": {
+"TipoPlaga": 2
+},
+"ReguladoresOtros": {
+"tipoRegulador": 2
+}
+},
+"Justificaciones": [{
+"JustAct": 20
+}
+],
+"ProductoFito": {
+"NumRegistro": "reg-001",
+"Cantidad": 23,
+"Unidad": 3
+},
+"IdentificadorAplicador{": {
+"AplicadorEmpresa": {
+"NumROPO": "1213345988SU/1"
+},
+"EquipoAplicador": {
+"NumREGANIP": "123456789",
+"EquipoPropio":1
+},
+},
+"AsesorValidacion": {
+"NumROPO": "1993345999SU/1"
+},
+"Eficacia": 3,
+"Observaciones": "Primera obs"
+}],
+"Cosecha": [{
+"IdCUECosechaI":65,
+"FechaInicio": "25/02/2023",
+"FechaFin": "27/02/2023",
+"DGCs": [{
+"CodigoDGC”:21321,
+"ProductoCosechado": 23,
+"superficie":55,33
+}
+],
+"FinalidadCosecha": {
+"IdFinalidad":1,
+"Cantidad": 69,
+"Unidad": 1
+},
+"GestionInsumos":true,
+"DestinoRestoVeg": {
+"idDestinosRest":1
+}
+}]
+}
+}]
+}
+Llamada a importar CUE
+{
+"CUADERNO":[
+{
+"CAExplotacion":"01",
+"IdTitular":"33333333C",
+"CodigoRea":"ES014560039617",
+"UnidadGestora":"B99999999",
+"DatosExplotacion":{
+},
+"ActividadesExplotacion":{
+"EnergiaUtilizada":[
+{
+"IdAjenaEnergia":1000,
+"Borrar":false,
+"FechaInicio":"20/02/2025",
+"FechaFin":"20/02/2025",
+"Cultivo":10,
+"TipoEnergia":2,
+"Cantidad":23.44,
+"Unidad":40
+}
+],
+"TratamientosPostCosecha":[
+{
+"IdAjenaTratamPostco":1000,
+"FechaActuacion":"12/01/2025",
+"ProductoVegetal":116,
+"Cantidad":105,
+"ProblematicaFito":{
+"Enfermedades":{
+"TipoEnfermedad":[
+12
+]
+},
+"ArtropodosGasteropodos":{
+},
+"MalasHierbas":{
+"TipoMalaHierba":[
+22
+]
+},
+"ReguladoresOtros":{
+"TipoRegulador":[
+47,
+48
+]
+}
+},
+"Justificaciones":[
+{
+"JustAct":4
+},
+{
+"JustAct":1
+}
+],
+"ProductosFito":{
+"NumRegistro":"23545",
+"TipoProducto":3,
+"Cantidad":20,
+"Unidad":4,
+"MateriaActivaFormulado":[
+{
+"MateriaActiva":3
+}
+]
+},
+"IdentificadorAplicador":[
+{
+"AplicadorEmpresa":{
+"NumROPO":"0114253138SU/2"
+},
+"EquipoAplicador":{
+"EquipoPropio":true,
+"IdEquipoAplicador":"Sulfatadora vid"
+}
+}
+],
+"AsesorValidacion":{
+"NumROPO":"132811994SA",
+"Fecha":"03/03/2023",
+"Validacion":true,
+"Observaciones":"Asesor validacion",
+"Confirmacion":true,
+"Contrato":true
+},
+"Eficacia":3,
+"Observaciones":"Ninguna en especial destacable"
+}
+],
+"TratamientosEdifInstalaciones":[
+{
+"IdAjenaTratamEdif":1000,
+"Edificaciones":[
+{
+"IdEdificacion":31130,
+"Volumen":223.33
+},
+{
+"IdEdificacion":31131,
+"Volumen":22.33
+}
+],
+"FechaActuacion":"20/08/2024",
+"ProblematicaFito":{
+"Enfermedades":{
+},
+"ArtropodosGasteropodos":{
+}
+},
+"Justificaciones":[
+{
+"JustAct":4
+},
+{
+"JustAct":1
+}
+],
+"ProductosFito":{
+"TipoProducto":3,
+"NumRegistro":"23545",
+"Cantidad":20,
+"Unidad":4,
+"MateriaActivaFormulado":[
+{
+"MateriaActiva":3
+}
+]
+},
+"IdentificadorAplicador":[
+{
+"AplicadorEmpresa":{
+"NumROPO":"0114253138SU/2"
+},
+"EquipoAplicador":{
+"EquipoPropio":true,
+"IdEquipoAplicador":"Sulfatadora vid"
+}
+}
+],
+"AsesorValidacion":{
+"NumROPO":"132811994SA",
+"Fecha":"03/03/2023",
+"Validacion":true,
+"Observaciones":"Primera prueba",
+"Confirmacion":true,
+"Contrato":true
+},
+"Eficacia":1,
+"Observaciones":"Observacion 1"
+}
+],
+"Cosecha":[
+{
+"IdAjenaCosecha":1000,
+"Borrar":false,
+"CosechaSiega":1,
+"FechaInicio":"05/07/2024",
+"FechaFin":"02/02/2022",
+"Cantidad":1,
+"Unidad":6,
+"DGCs":[
+{
+"CodigoDGC":464351,
+"ProductoCosechado":116,
+"Superficie":0.05
+}
+],
+"FinalidadCosecha":[
+],
+"SemillaSiembra":true,
+"Plantas":true,
+"SinCosechado":true,
+"DepositadoSuelo":false,
+"Cubiertas":[
+{
+"TipoCobertura":2,
+"DGCs":[
+{
+"CodigoDGC":333
+},
+{
+"CodigoDGC":3334
+}
+]
+}
+],
+"Maquinaria":[
+{
+"TipoMaquinariaUNE":333,
+"PotenciaMaquinaria":3,
+"UnidadesMedida":3,
+"TipoEnergia":33,
+"NumRepeticiones":3,
+"Duracion":3
+}
+]
+}
+],
+"SiembraPlantacion":[
+{
+"IdAjenaSiembraPlant":1000,
+"SiembraPlantacion":0,
+"SiembraDirecta":false,
+"FechaInicio":"02/11/2023",
+"FechaFin":"02/11/2023",
+"DGCs":[
+{
+"CodigoDGC":464351,
+"Producto":206,
+"Variedad":1,
+"Superficie":2.5
+}
+],
+"Cantidad":2,
+"MarcoPlantacion":"23x22",
+"DensidadPlantacion":23,
+"MaterialTratado":3,
+"MaterialAdquirido":3,
+"FechaAdquisicion":"03/03/2024",
+"NumLote":"1",
+"Resiembra":3
+}
+],
+"UsoSemillaTratada":[
+{
+"IdAjenaSemillaTrat":1000,
+"Borrar":false,
+"Tratamiento":2,
+"Fecha":"01/04/2025",
+"NumeroLote":"lote-001",
+"Cantidad":22.33,
+"ProductosFito":{
+"TipoProducto":3,
+"NumRegistro":"ES-01095",
+"Dosis":3,
+"Cantidad":23,
+"Unidad":3
+},
+"Observaciones":"Semilla tratada 2 -fecha abierta",
+"Eficacia":2
+}
+],
+"TratamFito":[
+{
+"IdAjenaTratamFito":1000,
+"Borrar":false,
+"FechaInicio":"28/04/2025",
+"FechaFin":"28/04/2025",
+"HoraTratamiento":"02:03:33",
+"FechaSeca":"23/03/2025",
+"DGCs":[
+{
+"CodigoDGC":464351,
+"Superficie":0.01,
+"EstadoFenologico":2
+}
+],
+"ProblematicaFito":{
+"Enfermedades":{
+"TipoEnfermedad":[
+12
+]
+},
+"ArtropodosGasteropodos":{
+},
+"MalasHierbas":{
+"TipoMalaHierba":[
+22
+]
+},
+"ReguladoresOtros":{
+"TipoRegulador":[
+47,
+48
+]
+}
+},
+"Justificaciones":[
+],
+"ProductosFito":[
+{
+"TipoProducto":1,
+"NumRegistro":"23545",
+"Cantidad":3.4,
+"Unidad":4
+}
+],
+"IdentificadorAplicador":[
+{
+"AplicadorEmpresa":{
+"NumROPO":"0114253138SU/2"
+},
+"EquipoAplicador":{
+"EquipoPropio":true,
+"IdEquipoAplicador":"equipo propio",
+"PotenciaMaquinaria":12,
+"UnidadesMedida":42,
+"AplicacionManual":true,
+"TipoMaquinaUNE":1,
+"TipoEnergia":2,
+"NumRepeticiones":4,
+"Duracion":3
+}
+}
+],
+"AsesorValidacion":{
+"NumROPO":"132811994SA",
+"Fecha":"20/02/2023",
+"Validacion":true,
+"Observaciones":"obs-002",
+"Confirmacion":true,
+"Contrato":true
+},
+"Eficacia":2,
+"Observaciones":"Fito nuevo"
+}
+],
+"Fertilizacion":[
+{
+"IdAjenaFerti":1000,
+"Borrar":false,
+"FechaInicio":"02/11/2023",
+"FechaFin":"03/11/2023",
+"DeclaraBuenasPracticas":true,
+"GestionsostInsu":"34",
+"BuenasPracticas":[
+{
+"TipoBPF":2
+},
+{
+"TipoBPF":4
+}
+],
+"MaterialFertilizante":{
+"Material":23,
+"DetalleMaterial":1376,
+"EmpresaSuministradora":"ppsl",
+"NifEmpresa":" nif-0001",
+"REGA":"3",
+"NIMA":"3",
+"TratamientoEstiercoles":2,
+"Macronutrientes":[
+{
+"TipoMacroN":2,
+"Porcentaje":23
+}
+],
+"MetalesPesados":[
+{
+"TipoMetalP":3,
+"Porcentaje":3
+}
+],
+"Micronutrientes":[
+{
+"TipoMicroN":3,
+"Porcentaje":23
+}
+],
+"Densidad":3,
+"UnidadesMedida":23
+},
+"AplicacionMaterialFertilizante":{
+"NombreProducto":"prd limpia",
+"AplicacionLodos":true,
+"TipoFertilizacion":1,
+"MetodoFertilizacion":1,
+"Dosis":3.4,
+"Unidad":3,
+"EmpresaServicios":"empr-0001"
+},
+"EquipoAplicador":{
+"EquipoPropio":true,
+"IdEquipoAplicador":"equp-apl-ferti-0010",
+"TipoMaquinariaUNE":1,
+"TipoEnergia":3,
+"NumRepeticiones":3,
+"Duracion":3
+},
+"Fertirrigacion":{
+"SistemaRiego":1,
+"Cantidad":1,
+"Unidad":2,
+"OrigenAgua":[
+{
+"IdOrigenAgua":2
+}
+],
+"NumContador":"3",
+"DosisN":4,
+"UnidadDosisN":3,
+"DosisP":3,
+"UnidadDosisP":3,
+"TipoEnergia":1
+},
+"DGCs":[
+{
+"CodigoDGC":464351,
+"Superficie":0.13
+}
+]
+}
+],
+"PlanAbonado":[
+{
+"IdAjenaPlan":1000,
+"Borrar":false,
+"NecesidadUFN":34.3,
+"NecesidadUFP2O5":12,
+"NecesidadUFK2O":4,
+"ObjetivoProduccion":2000,
+"CultivoPrecedente":121,
+"FechaAsesoramiento":"01/09/2024",
+"FechaGeneracion":"01/09/2024",
+"Herramienta":true,
+"DGCs":[
+{
+"CodigoDGC":2831790
+},
+{
+"CodigoDGCAjena":1000
+}
+]
+}
+],
+"ComercializacionVD":[
+{
+"IdAjenaVenta":1000,
+"Borrar":false,
+"FechaInicio":"25/07/2024",
+"ProductoVegetal":116,
+"TipoVenta":1,
+"Cantidad":3,
+"Unidad":5
+}
+],
+"Analitica":[
+{
+"IdAjenaAna":1000,
+"Borrar":false,
+"MaterialAnalizado":1,
+"Fecha":"15/07/2024",
+"Laboratorio":"re tipo-001",
+"Nif":"09323232",
+"NumBoletin":"Bol-002",
+"TiposAnalisis":[
+{
+"TipoAnalisis":3
+},
+{
+"TipoAnalisis":5
+}
+],
+"TiposSustancias":[
+{
+"TipoSustancia":3
+},
+{
+"TipoSustancia":5
+}
+],
+"ParametrosSuelo":{
+"MateriaOrganica":12.3,
+"Arena":12.3,
+"Limo":12.3,
+"Arcilla":12.3,
+"Ph":12.3,
+"FosforoAsimilable":12.3,
+"PotasioAsimilable":12.3,
+"NitrogenoTotal":12.3,
+"Conductividad":12.3
+},
+"DGCs":[
+{
+"CodigoDGC":464351
+}
+]
+}
+],
+"Pastoreo":[
+{
+"IdAjenaPastoreo":1000,
+"Borrar":false,
+"FechaInicio":"09/08/2024",
+"FechaFin":"03/10/2024",
+"AnimalesTerceros":20,
+"Animales":[
+{
+"REGA":"reg-001",
+"Numero":23,
+"Especie":203
+},
+{
+"REGA":"MONO",
+"Numero":10,
+"Especie":230
+}
+],
+"DGCs":[
+{
+"CodigoDGC":464351,
+"Superficie":34
+}
+]
+}
+],
+"DatosCubierta":[
+{
+"IdAjenaCubierta":1000,
+"Borrar":false,
+"FecEstablecimientoCub":"29/08/2024",
+"AnchuraCubierta":9,
+"AnchuraLibreProy":0,
+"TipoCobertura":4,
+"DGCs":[
+{
+"CodigoDGC":2831790
+},
+{
+"CodigoDGCAjena":1000
+}
+]
+}
+], "LaboresCulturales":[
+{
+"IdAjenaLabor":1000,
+"Borrar":false,
+"FechaInicio":"25/07/2024",
+"FechaFin":"ddddddddd",
+"Superficie":23,
+"TipoLabor":2,
+"DepositadoSueloPoda":false,
+"DepositadoSueloDesb":true,
+"Maquinaria":[
+{
+"TipoMaquinariaUNE":3,
+"PotenciaMaquinaria":3,
+"UnidadesMedida":3,
+"TipoEnergia":3,
+"NumRepeticiones":3,
+"Duracion":3
+}
+],
+"DGCs":[
+{
+"CodigoDGC":3
+},
+{
+"CodigoDGCAjena":3
+}
+]
+}
+], "Riego":[
+{
+"IdAjenaRiego":1000,
+"Borrar":false,
+"FechaInicio":"25/07/2024",
+"FechaFin":"ddddddddd",
+"Superficie":23,
+"SistemaRiego":2,
+"Cantidad":23,
+"UnidadMedida":3,
+"OrigenAgua":[
+{
+"IdOrigenAgua":3
+}
+],
+"TipoEnergia":3,
+"NumContador":"2",
+"BuenasPracticasRiego":[
+{
+"TipoBPR":3
+}
+],
+"DGCs":[
+{
+"CodigoDGC":3
+},
+{
+"CodigoDGCAjena":3
+}
+]
+}
+]
+}
+}
+]
+}
+Respuesta de comprobar estado
+{{
+"codigoResultado": "OK",
+"detalleImportacion": [],
+"CUADERNO": [ {
+"CAExplotacion": "12",
+"IdTitular": "9436760C",
+"CodigoRea": "ES130333308847",
+"DatosExplotacion": {},
+"ActividadesExplotacion": {"SiembraPlantacion": [ {
+"esValida": true,
+"IdCuaderno": 36,
+"IdAjenaSiembraPlant": 64256,
+"SiembraPlantacion": 1,
+"FechaInicio": "22/08/2023",
+"FechaFin": "29/08/2023",
+"SiembraDirecta": true,
+"DosisSiembra": 12.03,
+"DGCs": [ {
+"CodigoDGC": -19267,
+"SuperficieCultivada": 0.34
+}],
+"Cantidad": 1,
+"DensidadPlantacion": 2
+}]}
+}]
+} }
+Respuesta comprobar estado con errores
+{
+"codigoResultado": "FALLO",
+"detalleImportacion": [
+{
+"codigo": 5,
+"descripcion": "No se importan las medidas preventivas culturales porque para el código rea ES130888008847 la medida cultural preventiva 2 ya está registrada "
+},
+{
+"codigo": 5,
+"descripcion": "NNo se importa la actividad Fertilización porque para el código Rea: ES130888008847, con fecha de tratamiento: 19/12/2023, la unidad: 5 no está dentro de las unidades disponibles"
+},
+{
+"codigo": 5,
+"descripcion": "No se importa la actividad Fertilización, porque para el código Rea: ES130888008847 y la fecha de actuación: 19/12/2023, el producto precedente: 0 no existe en la lista de prodcutos disponibles"
+},
+{
+"codigo": 12,
+"descripcion": "No se importa la actividad Fertilización porque para el código Rea: ES130888008847 con fecha de inicio: 19/12/2023, la referencia al recinto: 341806 no es válida"
+},
+{
+"codigo": 12,
+"descripcion": "No se importa la actividad Fertilización porque para el código Rea: ES130888008847 con fecha de inicio: 19/12/2023, la referencia al recinto: 341806 no es válida"
+},
+{
+"codigo": 12,
+"descripcion": "No se importa la actividad Fertilización porque para el código Rea: ES130888008847 con fecha de inicio: 19/12/2023, la referencia al recinto: 341806 no es válida"
+},
+{
+"codigo": 12,
+"descripcion": "No se importa la actividad Fertilización porque para el código Rea: ES130888008847 con fecha de inicio: 19/12/2023, la referencia al recinto: 341806 no es válida"
+}
+],
+"CUADERNO": [ {
+"CAExplotacion": "12",
+"IdTitular": "9388850U",
+"CodigoRea": "ES130888008847",
+"DatosExplotacion": {"MedidaPreventivaCultural": [{"IdMedidaPreventCultural": 2}]},
+"ActividadesExplotacion": {"Fertilizacion": [ {
+"esValida": false,
+"IdCuaderno": 36,
+"IdAjenaFerti": 0,
+"FechaInicio": "19/12/2023",
+"FechaFin": "19/12/2023",
+"DeclaraBuenasPracticas": false,
+"MaterialFertilizante": {
+"Material": 4,
+"EmpresaSuministradora": "BODEGA DOS",
+"NifEmpresa": "1111",
+"Macronutrientes": [],
+"MetalesPesados": [],
+"Micronutrientes": []
+},
+"AplicacionMaterialFertilizante": {
+"NombreProducto": "Estiércol sólido de aves",
+"NumeroInscripcion": null,
+"ResiduosR10": false,
+"NumAutorizacion": null,
+"AplicacionLodos": false,
+"TipoFertilizacion": 1,
+"MetodoFertilizacion": 1,
+"Dosis": 3,
+"Unidad": 5,
+"AlbaranFactura": null,
+"EmpresaServicios": null
+},
+"PlanAbonado": {
+"NecesidadUFN": 0,
+"NecesidadUF": 0,
+"NecesidadUFK2O": 0,
+"ObjetivoProduccion": 0,
+"ProductoPrecedente": 0,
+"Herramienta": false
+},
+"DGCs": [
+{"CodigoDGC": 341806},
+{"CodigoDGC": 341806},
+{"CodigoDGC": 341806},
+{"CodigoDGC": 341806}
+]
+}]}
+}]
+}
+Respuesta crear sin errores
+"resultado": {
+"codigoResultado": "OK",
+"detalleImportacion": [ {
+"codigo": 64672,
+"descripcion": "Tratamientos registrados correctamente. Llame a la operacion /comprobarEstado/codigo para verficar el estado e la importación"
+}]
+}
+Anexo 3. TIPOS DE CERTIFICADOS
+Los certificados que se consideran válidos son los siguientes:
+Sello de entidad: este certificado debería contener, al menos, lo siguientes campos del Subject para poder realizar la comunicación con el SW:
+CN: para indicar el nombre del dominio: empresa.local.es (máximo 64 caracteres)
+Este campo es de contenido libre, por lo que se puede utilizar para almacenar el dominio, aunque con la limitación de 64 caracteres.
+serialNumber: Para indicar el NIF (AXXXXXXXXX) de la empresa propietaria del dominio.
+Este campo es el serial number (SN) del Subject del certificado. No confundir con el Serial number identificador principal del certificado, el cual no es personalizable.
+Certificado de servidor SSL/TLS (DV, OV, EV): este certificado, con las tres opciones de verificación, debería contener, al menos, el campo del Subject relativo al dominio:
+CN: para indicar el nombre del dominio: empresa.local.es
+Según la norma EN 319 411 – 1 Electronic Signatures and Infrastructures (ESI) Policy and security requirements for Trust Service Providers issuing certificate y la referenciada por ésta (CA-Browser-Forum-TLS-BRs-v2.0.2) el uso del campo commName, que contiene el dominio del servidor aparece como no recomendado, al menos para la opción OV.
+En ambos casos, se debe confirmar que en el certificado se marca el check de Autenticación de cliente.
+Dada la incertidumbre en el uso del campo CN en los certificados de servidor tipo OV (validación de organización), recomendamos el uso de Sello de entidad.
+Anexo 4. Implementación de la comunicación tras la no obligatoriedad de campo O en certificado
+Debido a que no se puede utilizar el campo O del certificado para almacenar el nombre del cuaderno comercial, tal y como estaba previsto en la versión 1.4.1 de este documento, se requiere tener en cuenta lo siguiente:
+Incluir en el método de comunicación el nombre del Cue-comercial que se vaya a usar.
+https://servidor:puerto/IUWS/comunicacion/nombreAppCue
+Dado que en todas las llamadas al IUWS se requiere el certificado Con este nuevo parámetro ya podríamos tener toda la información necesaria:
+Dependiendo del tipo de certificado, de éste se podrían obtener
+CN: dominio del servidor que hace la llamada
+SERIALNUMBER: NIF de la empresa propietaria del dominio
+De la request
+Nombre del cuaderno comercial
+Con estos dos o tres datos, dependiendo del tipo de certificado utilizado, se podría localizar, en las tablas de autorización, la empresa autorizada que usa el dominio dado y el software comercial correspondiente, para poder generar el Token de sesión (jwt).
+En este token se incluye el tiempo de vida del mismo, y el Cue-comercial. El mismo se cifra con un “secreto”, el cual debe ser único para cada terna (dominio, NIF, aplicación).
+El token se devuelve al Cue-comercial, que tendrá que añadirlo en el resto de llamadas del IUWS.
+Resto de llamadas del IUWS
+Hay que recordar que, para que se tenga acceso al recurso, se deben validar internamente los siguientes datos:
+Dominio del servidor que realiza la llamada
+NIF de la Empresa habilitada (dato incluido en el JSON)
+Cue-Comercial
+Si en las tablas de autorización se encuentra la combinación de estos tres valores, se otorgará acceso al recurso.
+Pasos a seguir en todas las llamadas al IUWS
+El proceso para cada llamada sería el siguiente:
+Llamada a la operación comunicación con el nombre del cuaderno comercial que se va usar.
+El IUWS recibe la petición y verifica con su base de datos, para comprobar que la petición está autorizada
+En caso afirmativo el IUWS devuelve un token (Jwt) para validar las sesiones posteriores.
+El token está encriptado con una llave que sólo el IUWS conoce, para poder validar que las futuras llamadas sean válidas
+El cuaderno comercial que hizo la llamada recibe este jwt, que tendrá que adjuntar al resto de las peticiones, en la cabecera Authorization, y, dependiendo de la operación que vaya a llamar, tendrá que crear HttpPost o HttpGet con los parámetros específicos que requiere cada una de las operaciones.
+Uso del token generado al establecer la comunicación
+JWT es un estándar abierto basado en JSON propuesto por IETF (RFC 7519) para la creación de tokens de acceso que permiten la propagación de identidad y privilegios.
+JWT se basa en la creación de un token, generado por la parte servidora, que se pasará en la comunicación cliente servidor y que contiene información encriptada del cliente, así como distintos parámetros, como pueden ser, tiempo de vida del token, o los recursos a los que se permite acceder al cliente. Entre estos parámetros destaca uno, el secreto, que es una cadena que se almacena en el servidor y que nadie más conoce.
+La generación del JWT se implementará de la siguiente forma:
+El token, deber ir firmado a través de un algortimo, y se forma de la siguiente manera:
+AlgoritmoEncriptacion (base64UrlEncoder(Header)+”.” base64(PayLoad),“secreto”);
+Header: tipo de algoritmo que se usa para encriptar el token
+Payload: son los parámetros que se incluyen en el token, y pueden ser configurables, por ejemplo:
+Usuario (credenciales de identificaón)
+Password
+Tiempo de vida
+Acceso a recursos permitidos
+…
+Secreto: Cadena que se almacenará en el servidor y que nadie conoce.
+Servicio REST y Swagger
+Para la creación del servicio REST del interfaz único, se ha seguido las pautas que spring recomienda en su implementación: https://spring.io/guides/gs/rest-service
+El interfaz único es una aplicación que está basada en spring MVC y la clase principal donde se exponen las operaciones corresponden a un RestController, como específca spring.
+La url para poder obtener el swagger en el entorno de integración es esta:
+https://sga.entornointegracion.es/IUWS/swagger-ui.html
+Anexo 5. JsonSchema de CUE
+Anexo 6. Método de llamada con certificados para el método comunicacion
+Los cuadernos comerciales tendrán que adaptar las llamadas al IUWS para que se realicen de forma homogénea e independiente de la Comunidad Autónoma con la que se quieran comunicar.
+Por tanto, para unificar la forma de realizar las llamadas, todos los cuadernos comerciales deberán incluir en las peticiones https de la llamada al método comunicacion la información siguiente.
+Certificado cliente: Datos del certificado del cliente
+Cabecera especial certificate-sscc: El certificado del cliente exportado en Base64 en una cabecera especial que se tendrá que llamar certificate-sscc
+La cabecera data-signed correspondiente al Nif/Cif firmado con la llave privada del certificado del cuaderno comercial. El IUWS verificará que la información que viene en el parámetro data-signed corresponda con la información almacenada en su sistema, usando la llave pública del certificado incluida en la cabecera especial certificate-sscc. El algoritmo criptográfico que se usará será el mismo algoritmo del certificado.
+Además, el servidor que tiene instalado el cuaderno comercial tiene que tener el almacén de certificados de confianza (Trust Store).
+Comunicación segura
+Para garantizar que la comunicación entre el cuaderno comercial y el interfaz único sea una comunicación segura, se tendrá que hacer a través de los almacenes de confianza de ambos equipos (Trust Store). Estos almacenes de confianza tendrán que contener las cadenas de certificación de las Autoridades de Certificación (AACC), o bien que las AACC que estén en ambos almacenes cumplan las reglas de confianza de las mismas.
+Cuando desde el cuaderno comercial se intenta realizar una conexión con el interfaz único, y no es posible establecer esa comunicación, se debe a que las AACC que hay entre ambos equipos no confían, para ello se tendrá que hacer una de estas dos opciones:
+Incluir en el almacén de certificados de confianza del cuaderno comercial, la cadena de certificación del certificado donde está instalado el interfaz único (IUWS).
+Mandar al Organismo Pagador la cadena de certificación del certificado del cuaderno comercial (equipo donde se encuentra instalado el cuaderno comercial), para que lo incluya dentro del almacén de certificados donde se encuentre instalado el interfaz único (IUWS).
+Una vez realizada una de estas dos opciones, la comunicación entre el cuaderno comercial y el interfaz único (IUWS) se realizará a través de una conexión segura.
+Autenticación de las llamadas al interfaz único
+Una vez que se haya establecido la comunicación segura entre el cuaderno comercial y el interfaz único (IUWS) se tendrá que realizar la autenticación, para identificar que el usuario está registrado en el sistema, lo cual se va a llevar a cabo con los datos que vendrán en la petición bajo los puntos b) y c), es decir, los datos propios de certificado que tiene que solicitar cada cliente.
+En las peticiones que se realicen desde los cuadernos comerciales se tendrán que adjuntar
+Datos de certificado del cliente.
+El certificado del cliente exportado en Base64 que se deberá incluir bajo la cabecera especial certificate-sscc, esto se debe a que cada Comunidad Autónoma tiene una infraestructura particular, y se debe garantizar que en todas ellas las llamadas sean idénticas.
+Al exportar los datos del certificado del cliente a Base64 se genera un fichero con la siguiente estructura
+-----BEGIN CERTIFICATE-----
+MIICxDCCAaygAwIBAgIEZfLVljANBgkqhkiG9w0BAQsFADAkMQ8wDQYDVQQFEwYw
+u+cXuVTlpLkBPvKI+wPxz8yK2exeelsLwGj3vjyZYTlwqnJZ18K5EQ==
+-----END CERTIFICATE-----
+La cabecera especial certificate-sscc:
+No debe llevar la fila de -----BEGIN CERTIFICATE-----
+Los datos en Base64 no deberán estar en distintas líneas, como el caso anterior, se deberían eliminar los saltos de línea
+Se debe quitar la fila de -----END CERTIFICATE-----
+Por tanto, la cabecera, en este caso sería MIICxDCCAaygAwIBAgIEZfLVljANBgkqhkiG9w0BAQsFADAkMQ8wDQYDVQQFEwYwu+cXuVTlpLkBPvKI+wPxz8yK2exeelsLwGj3vjyZYTlwqnJZ18K5EQ==
+Con toda la información anterior ya se está en disposición de realizar las llamadas, indicadas en el documento técnico, al interfaz único IUWS.
+El cuaderno comercial, en función de la tecnología que se haya usado para implementarse, deberá configurar toda la información anteriormente descrita, para poder comunicarse con el interfaz único.
+Securización a través de la cabecera data-signed
+La cabecera data-signed se ha introducido como un factor más para evitar el acceso indebido a los datos.
+Se deben tener en cuenta varios puntos a la hora de establecer las comunicaciones con el Interfaz único:
+Un servidor, que será quien realice la petición al Interfaz único. Este servidor tendrá instalado un certificado que garantizará que la información que se está enviando es correcta y no fraudulenta.
+La infraestructura desplegada que tenga cada Comunidad Autónoma. Para validar que la información no sea fraudulenta se deben dar una de estas dos situaciones:
+Configuración de balanceadores correcta, para transmitir el certificado al IUWS
+Configuración alternativa, a través de la cabecera certificate-sscc, que corresponde a una exportación del certificado anterior exportado en Base64. Y esta cabecera será la que llegue al IUWS.
+Las comunicaciones al interfaz único siempre se realizarán a través de las Entidades Habilitadas , es decir, cuando se invoca el método de comunicación (obtener el token de sesión) del IUWS, realmente se debe entender como que una Entidad Habilitada solicitará al IUWS ese token que se va a realizar a través de un Cue comercial que estará instalado en un servidor con un certificado propio del servidor.En el caso de que no exista una Entidad Habilitada, como tal, y el envío se realice directamente a través de un Cue Comercial , será éste quien deberá estar dado de alta como una Entidad Habilitada, y el proceso de validación sería el anteriormente expuesto.
+Al introducir un elemento no estándar en las comunicaciones, que corresponde a la cabecera certificate-sscc, se debe asegurar que la información sea real y segura, para eso surge la cabecera data-signed, que se formará según el siguiente proceso.
+La Entidad habilitada solicita la comunicación a través del IUWS
+El Cue Comercial, que se encuentra instalado en un servidor (propio de la Entidad o centralizado), con el certificado correspondiente, tendrá que firmar el CIF de esta Entidad, con la llave privada del certificado instalado en el servidor.
+Se realizará la invocación al método del IUWS según el anexo VI.
+El IUWS, de las cabeceras que están incluidas en la petición, deduce el CIF que deberá estar contenido en la cabecera data-signed cifrado con el mismo algoritmo del certificado, y mediante técnicas criptográficas aplicadas a las cabeceras validará la veracidad de la información, permitiendo o rechazando el acceso.
+A modo de guía, se indican los pasos a seguir para configurar un cliente basado en tecnología Java y httpClient de apache, para realizar las comunicaciones con el interfaz único.
+Condiciones previas:
+En el servidor donde se encuentre instalado el cuaderno comercial que hará las peticiones, se deberá incluir en el fichero KeyStore del servidor (almacen_certificados_keystore) el certificado del cuaderno comercial que se ha solicitado a una CA.
+En el momento de incluirlo. en ese almacén se va a solicitar un password de protección de la entrada.
+Este password (password_proteccion_certificado_cuaderno_en_el_almacen_certificados_keystore) será el que posteriormente se deba incluir en la llamada al servicio IUWS.
+Paso 1:
+Acceder al almacén donde estén todos los certificados instalados en ese equipo (tanto el del cuaderno comercial como otros que usen para distintos fines).
+En el caso que tenemos como ejemplo se ha llamado “almacen_certificados_keystore” y este fichero está protegido por un password password_acceso_al_almacen_certificados_keystore
+Paso 2:
+Del almacén del certificado (almacen_certificados_keystore), hay que leer el certificado del cuaderno comercial, para lo que es necesario conocer el password con el que se incluyó en el almacen_certificados_keystore.
+En el ejemplo se considera que sólo existe un certificado dentro del mismo.
+Si existiese más de un certificado en el almacén KeyStore, se debería identificar dentro del mismo por el alias que se dio cuando se añadió el certificado del usuario/cuaderno en el almacen_certificados_keystore.
+Indicar el método al que se va llamar en el interfaz único
+final HttpGet request = new HttpGet("https://url_operacion_interfaz/IUWS/comunicacion/NombreCueComercial");
+Leer datos de las Autoridades de Certificación en el equipo donde está instalado el cuaderno comercial.
+final Path trustStorePath = Paths.get("fichero_lista_certificados_ca_confianza");
+final InputStream trustStoreStream = Files.newInputStream(trustStorePath, StandardOpenOption.READ);
+final KeyStore trustStore = KeyStore.getInstance(keyStoreType);
+trustStore.load(trustStoreStream, "password_almacen_ca_confianza".toCharArray());
+final String trustManagerFactoryAlgorithm = TrustManagerFactory.getDefaultAlgorithm();
+final TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance(trustManagerFactoryAlgorithm);
+trustManagerFactory.init(trustStore);
+trustStoreStream.close();
+Leer datos del certificado del usuario
+Paso 1: Acceder al fichero de certificados del equipo y cargar sus datos en memoria.
+final Path identityPath = Paths.get("almacen_certificados_keystore");
+final InputStream identityStream = Files.newInputStream(identityPath, StandardOpenOption.READ);
+final KeyStore identity = KeyStore.getInstance(keyStoreType);
+identity.load(identityStream, "password_acceso_al_almacen_certificados_keystore".toCharArray());
+Paso 2: Acceder al certificado del cuaderno comercial.
+final String keyManagerFactoryAlgorithm = KeyManagerFactory.getDefaultAlgorithm();
+final KeyManagerFactory keyManagerFactory = KeyManagerFactory
+.getInstance(keyManagerFactoryAlgorithm);
+keyManagerFactory.init(identity, "password_proteccion_certificado_cuaderno_en_el_almacen_certificados_keystore".toCharArray());
+identityStream.close();
+Crear cabecera especial certificate-sscc
+request.addHeader("certificate-sscc"
+"MIICxDCCAaygAwIBAgIEZfLVljANBgkqhkiG9w0BAQsFADAkMQ8wDQYDVQQFEwYwu+cXuVTlpLkBPvKI+wPxz8yK2exeelsLwGj3vjyZYTlwqnJZ18K5EQ==”);
+Adjuntar la petición los datos anteriores.
+final SSLContext sslContext = SSLContext.getInstance("TLS");
+sslContext.init(keyManagerFactory.getKeyManagers(), trustManagerFactory.getTrustManagers(),
+null);
+final HttpClient httpClient = HttpClients.custom().setSSLContext(sslContext)
+.setSSLHostnameVerifier(new DefaultHostnameVerifier()).build();
+Realizar la llamada al método del interfaz único
+final HttpResponse respuesta = httpClient.execute(request);
+//Procesar respuesta
+final ByteArrayOutputStream resultado = new ByteArrayOutputStream();
+final byte[] buffer = new byte[1024];
+Anexo 7. Uso de certificados por la comunidad autónoma
+Para garantizar que todos los cuadernos comerciales llamen al interfaz único (IUWS) de la misma forma, independientemente de la Comunidad Autónoma, ésta deberá configurar la forma de leer los certificados.
+Durante las pruebas realizadas en el entorno de integración, se observó que cada Comunidad Autónoma puede tener una configuración particular a la hora de leer los certificados.
+Comunidades con distintos balanceadores (Apache, F5)
+Comunidades con cabeceras especiales
+Distintas disposiciones de los balanceadores y canales entre ellos y los nodos de la aplicación del interfaz único.
+Por tanto, se debe garantizar que cualquier petición que realice el cuaderno comercial se pueda atender, para lo que se establecen distintos escenarios y será cada Comunidad Autónoma quien decida la forma que utiliza para validar las peticiones.
+Posibles escenarios:
+La Comunidad Autónoma tiene configurado un balanceador que transmite el certificado a través de un canal seguro al nodo del interfaz único. El balanceador deberá transmitir el certificado en la cabecera X-Client-cert
+Por circunstancias de la infraestructura que tenga la Comunidad, es posible que el balanceador del que disponga en una url esté atendiendo a aplicaciones que no requieran el uso de certificados, y sobre esa misma url se intente atender también al interfaz único, que sí los requiere. Entonces se tendrá que optar por una de estas soluciones:
+Crear una nueva url para que el balanceador sólo atienda al interfaz único y que sea capaz de transmitir el certificado del cliente en la cabecera X-Client-cert, siguiendo el paso 1.
+Usar la cabecera especial certififcate-sscc
+Si la Comunidad Autónoma toma como solución una de las expuestas en el punto 1 ó 2.a, será el balanceador:
+El responsable de permitir que exista comunicación segura entre el cuaderno comercial y el nodo del interfaz único
+El que gestione el certificado del cliente, que el cuaderno comercial lo adjuntó en su llamada https.
+Por tanto, toda llamada que llegue ya al nodo de la aplicación vendrá autorizada, y sólo se tendrá que ver si los datos del certificado están almacenados ya en las tablas de gestión del interfaz único, para permitir la ejecución del método.
+Si la Comunidad, opta por usar la cabecera especial certificate-sscc (escenario 2.b), se tendrán que realizar ciertas configuraciones y verificaciones adicionales.
+La cabecera especial se debe transformar a una cabecera de un certificado X.509
+Se deben establecer chequeos sobre la información de la cabecera, para determinar que se está mandando un certificado válido
+No se deberán admitir certificados autofirmados, por tanto, la información del campo Subject no podrá ser igual que la información del campo Issuer
+La información del Issuer del certificado, se tendrá que encontrar dentro del almacén de certificados de confianza (Trust Store) del nodo donde se instale el interfaz único.
+El certificado no podrá estar caducado.
+Si por circunstancias, la Comunidad Autónoma no tiene la parte pública del emisor que creó el certificado del cliente, ésta deberá almacenarla en todos los nodos donde esté instalado el interfaz único (IUWS).
+Anexo 8. Pasos que debe realizar CUE comercial para realizar llamada a comunicacionProductor
+El cuaderno comercial deberá crear según su infraestructura una url de callback.
+La url de vuelta deberá ser capaz de recibir dos parámetros:
+token : Token que generará el interfaz único
+peticion : corresponde a un identificador que no se debe repetir para identificar el token en la vuelta al cuaderno comercial
+Preparse para recibir el token y la petición
+@WebServlet("/ServletVuelta")
+public class MyServlet extends HttpServlet {
+@Override
+protected void doGet(final HttpServletRequest request, final HttpServletResponse response)
+throws ServletException, IOException {
+response.setContentType("text/html");
+response.getWriter().println("<h1>¡Peticion = " + request.getParameter(“peticion")
++ " ---- Token: " + request.getParameter(“token") + “! </h1>");
+}
+}
+Realizar la llamada
+<script>
+function pedirTokenSession() {
+window.location.href="https://localhost:8443/IUWS/api/comunicacionProductor/cueComercial/11111";
+}
+</script>
+En el ejemplo, caso particular, es un servlet que se ejecuta dentro de un servidor Jetty.
+La url de callback sería del tipo :
+https://localhost:9443/ServletVuelta?peticion=1111r&token=tokenJwt;
+En el ejemplo, el cliente JavaScript debe hacer la invocación al método de comunicacionProductor indicando el nombre del cuaderno comercial que está usando y un identificador numérico para asociar la petición con el particular y el token que devuelve el interfaz único.
+Según la solución técnica de cada cuaderno comercial, tendrá que realizar una llamda con la funcionalidad que aporta javaScript de window.location.href o widow.open(url);
+Anexo 9. Ejemplo de funcionamiento del Interfaz para el método comunicacionProductor
