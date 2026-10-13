@@ -5,6 +5,9 @@ Spain, built on top of the *plan de abonado* obligation and the SIEX farm data s
 
 **Status:** research and design only — there is no code in this repository yet.
 
+**Planned stack:** TypeScript in a pnpm workspace monorepo built with Turborepo. See
+[design/01-flujo-datos.md](design/01-flujo-datos.md#10-implementation-stack).
+
 ## The idea
 
 Spain's [RD 1051/2022](https://www.boe.es/buscar/act.php?id=BOE-A-2022-23052) requires
@@ -31,7 +34,7 @@ that connection.
 | [research/04-modelo-datos-fertilizacion.md](research/04-modelo-datos-fertilizacion.md) | CUE data model for fertilization, plan de abonado and soil analytics |
 | [research/05-fuentes.md](research/05-fuentes.md) | Every source consulted, with links |
 | [research/sources/](research/sources/) | Text extracted from the official FEGA annexes (Anexo V, Anexo VI) |
-| [design/01-flujo-datos.md](design/01-flujo-datos.md) | Design sketch: actors, canonical objects, data flows, field mapping, components, phasing |
+| [design/01-flujo-datos.md](design/01-flujo-datos.md) | Design sketch: actors, canonical objects, data flows, field mapping, components, phasing, implementation stack |
 | [design/02-lenguaje-ubicuo.md](design/02-lenguaje-ubicuo.md) | Ubiquitous language: bounded contexts, glossary per context, invariants, resolved ambiguities |
 
 Claims about the national schema are sourced in `research/`; everything in `design/`

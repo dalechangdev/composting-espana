@@ -6,8 +6,22 @@ Guidance for Claude Code when working in this repository.
 
 Research and design notes for a digital layer connecting compost producers to farmers
 in Spain, built on the *plan de abonado* obligation (RD 1051/2022) and the SIEX farm
-data system (RD 1054/2022). It is Markdown only: there is no code, build, test or lint
-step.
+data system (RD 1054/2022). It is Markdown only for now: there is no code, build, test
+or lint step yet.
+
+## Planned stack
+
+Decided 2026-10-14, not yet scaffolded: **TypeScript**, **pnpm** workspaces and
+**Turborepo**. Use pnpm, never npm or yarn. Framework, database, job queue and
+workspace layout are still open; the list is in `design/01-flujo-datos.md` §10. Do not
+treat any of them as decided, and ask before scaffolding.
+
+When code is added:
+
+- Package boundaries follow the bounded contexts in `design/02-lenguaje-ubicuo.md`.
+- Identifiers use that note's vocabulary. Check its "Avoid" columns before naming
+  anything, and add a term there before introducing a new domain word in code.
+- Replace this section with the real build, test and lint commands.
 
 ## Layout
 
@@ -15,7 +29,8 @@ step.
   notes `01`–`05`, indexed by `research/README.md`.
 - `research/sources/` — plain-text extracts of the official FEGA annexes (Anexo V
   sheets `CUE` and `REA`, Anexo VI). Large; grep them rather than reading them whole.
-- `design/` — proposals built on the research. Numbered the same way.
+- `design/` — proposals built on the research. Numbered the same way. `01` is the data
+  flow and implementation stack; `02` is the ubiquitous language.
 - `README.md` — top-level overview and glossary.
 
 ## Rules for content

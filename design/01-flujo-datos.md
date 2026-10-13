@@ -253,3 +253,40 @@ compost bias, is the durable position.
 - Anexo X: real cost and elapsed time to authorise a commercial CUE, per region.
 - Who is contractually liable for a wrong CUE entry we composed — us, the entidad, or
   the holder? This determines how much the dose engine may decide versus merely propose.
+- Implementation choices still open beneath the chosen language and tooling: see §10.
+
+## 10. Implementation stack
+
+Decided 2026-10-14. No code exists yet; this records the choice so the first scaffold
+follows it.
+
+| Concern | Choice |
+|---|---|
+| Language | **TypeScript**, for every component in §6 and for any web front end |
+| Package manager | **pnpm**, using pnpm workspaces |
+| Monorepo build orchestration | **Turborepo** |
+
+Consequences for the design:
+
+- **One repository, many packages.** The components in §6 become workspace packages
+  rather than separately versioned services. Package boundaries should follow the
+  bounded contexts in [02-lenguaje-ubicuo.md](02-lenguaje-ubicuo.md) §2, so that a
+  context's vocabulary and its code live in one place and cross-context imports are
+  explicit.
+- **Names in code come from the ubiquitous language.** Model objects use the English
+  PascalCase names in 02 (`CompostBatch`, `FarmLink`); schema names (`Fertilizacion`,
+  `CodigoDGC`) appear only in the packages that translate at the IUWS boundary.
+- **The dose engine (§4.E) must not use floating-point arithmetic.** TypeScript has no
+  built-in decimal type, so doses, percentages and coefficients need an explicit decimal
+  representation. Which one is open.
+
+Not yet decided:
+
+- Runtime and HTTP framework for the backend.
+- Database. The demand surface (§4.C) needs geospatial aggregation by municipality.
+- How the asynchronous submission lifecycle (§4.F) is made durable: a workflow engine
+  or a database-backed job queue.
+- Web front-end framework for the producer and reconciliation interfaces.
+- Decimal library for the dose engine.
+- Where the qualified certificate's private key is held (§2), which constrains hosting.
+- Workspace layout: the exact package list and whether apps and libraries are split.
