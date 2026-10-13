@@ -253,40 +253,66 @@ compost bias, is the durable position.
 - Anexo X: real cost and elapsed time to authorise a commercial CUE, per region.
 - Who is contractually liable for a wrong CUE entry we composed — us, the entidad, or
   the holder? This determines how much the dose engine may decide versus merely propose.
-- Implementation choices still open beneath the chosen language and tooling: see §10.
+- Implementation choices deferred or still open: see the end of §10.
 
 ## 10. Implementation stack
 
-Decided 2026-10-14. No code exists yet; this records the choice so the first scaffold
-follows it.
+Decided 2026-10-14. No code exists yet; this records the choices so the first scaffold
+follows them.
 
 | Concern | Choice |
 |---|---|
-| Language | **TypeScript**, for every component in §6 and for any web front end |
+| Language | **TypeScript**, for every component in §6 and for the web front end |
 | Package manager | **pnpm**, using pnpm workspaces |
 | Monorepo build orchestration | **Turborepo** |
+| Backend framework | **NestJS**, which implies Node.js as the runtime |
+| Database | **PostgreSQL** with the **PostGIS** extension |
+| Data-access layer | **Prisma** |
+| Durable jobs | **pg-boss**, a job queue stored in PostgreSQL |
+| Web front end | **React** single-page app built with **Vite** |
+| Decimal arithmetic | **decimal.js** |
+| Workspace layout | **Hybrid**: framework-free packages for pure domain logic, NestJS modules for everything else |
 
 Consequences for the design:
 
-- **One repository, many packages.** The components in §6 become workspace packages
-  rather than separately versioned services. Package boundaries should follow the
-  bounded contexts in [02-lenguaje-ubicuo.md](02-lenguaje-ubicuo.md) §2, so that a
-  context's vocabulary and its code live in one place and cross-context imports are
-  explicit.
+- **One repository, one API app.** The bounded contexts in
+  [02-lenguaje-ubicuo.md](02-lenguaje-ubicuo.md) §2 become NestJS modules inside a single
+  backend app, one module per context. Two start as standalone packages with no NestJS
+  dependency: **Dosing**, so the dose engine (§4.E) can be tested and audited in
+  isolation and reused by the front end, and **Catalogue**, because Supply, Dosing and
+  Filing all validate against it. Another context is extracted into a package only when
+  it gains a second consumer.
+- **Module boundaries need enforcing.** Inside one app nothing stops one context's
+  module importing another's internals, so cross-context imports should be restricted
+  by a lint rule from the first commit.
 - **Names in code come from the ubiquitous language.** Model objects use the English
   PascalCase names in 02 (`CompostBatch`, `FarmLink`); schema names (`Fertilizacion`,
-  `CodigoDGC`) appear only in the packages that translate at the IUWS boundary.
-- **The dose engine (§4.E) must not use floating-point arithmetic.** TypeScript has no
-  built-in decimal type, so doses, percentages and coefficients need an explicit decimal
-  representation. Which one is open.
+  `CodigoDGC`) appear only in the modules that translate at the IUWS boundary.
+- **No floating-point arithmetic in the dose engine.** Doses, percentages and
+  coefficients are decimal.js values end to end and are stored in `numeric` columns,
+  which Prisma returns as decimal.js values rather than JavaScript numbers.
+- **The submission lifecycle (§4.F) is a state machine we write.** pg-boss supplies
+  durable jobs and scheduling, not workflows: the poll loop and the day 7 and day 21
+  checks are jobs, and the record states are ours to model. A job is enqueued in the
+  same database transaction as the domain change that caused it, so a `CueSubmission`
+  cannot exist without its poll job or the reverse.
+- **PostGIS and Prisma do not fully meet.** Prisma is not expected to model geometry
+  columns as first-class types, so the demand surface's (§4.C) spatial columns and
+  queries will likely go through raw SQL. Verify against the Prisma version in use
+  when scaffolding, and keep that SQL inside the Demand module.
+- **The front end is a client of the API only.** No server rendering; a public
+  marketing site, if one is wanted, is a separate concern.
+
+Deferred:
+
+- **Where the qualified certificate's private key is held** (§2). Not needed in Phases
+  0 and 1, where the partner entidad habilitada calls IUWS with its own certificate
+  (§8). Decide at Phase 2; the starting point is a secrets manager that loads the key
+  into the backend process at start, behind an interface so that a proxy or a
+  hardware-backed key can replace it.
 
 Not yet decided:
 
-- Runtime and HTTP framework for the backend.
-- Database. The demand surface (§4.C) needs geospatial aggregation by municipality.
-- How the asynchronous submission lifecycle (§4.F) is made durable: a workflow engine
-  or a database-backed job queue.
-- Web front-end framework for the producer and reconciliation interfaces.
-- Decimal library for the dose engine.
-- Where the qualified certificate's private key is held (§2), which constrains hosting.
-- Workspace layout: the exact package list and whether apps and libraries are split.
+- The package and module list beyond Dosing and Catalogue, and the directory names.
+- Which lint rule enforces module boundaries.
+- Hosting, which the key-storage decision above will constrain.

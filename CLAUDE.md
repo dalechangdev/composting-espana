@@ -11,16 +11,32 @@ or lint step yet.
 
 ## Planned stack
 
-Decided 2026-10-14, not yet scaffolded: **TypeScript**, **pnpm** workspaces and
-**Turborepo**. Use pnpm, never npm or yarn. Framework, database, job queue and
-workspace layout are still open; the list is in `design/01-flujo-datos.md` §10. Do not
-treat any of them as decided, and ask before scaffolding.
+Decided 2026-10-14, not yet scaffolded. Rationale and consequences are in
+`design/01-flujo-datos.md` §10; read it before scaffolding, and ask before scaffolding.
+
+| Concern | Choice |
+|---|---|
+| Language | TypeScript |
+| Package manager | pnpm workspaces. Never npm or yarn |
+| Monorepo | Turborepo |
+| Backend | NestJS |
+| Database | PostgreSQL with PostGIS |
+| Data access | Prisma |
+| Durable jobs | pg-boss |
+| Web front end | React single-page app on Vite |
+| Decimal arithmetic | decimal.js |
 
 When code is added:
 
-- Package boundaries follow the bounded contexts in `design/02-lenguaje-ubicuo.md`.
+- One NestJS module per bounded context in `design/02-lenguaje-ubicuo.md`. Dosing and
+  Catalogue are standalone packages with no NestJS dependency. Do not extract another
+  context into a package until it has a second consumer.
 - Identifiers use that note's vocabulary. Check its "Avoid" columns before naming
   anything, and add a term there before introducing a new domain word in code.
+- Never use JavaScript numbers for doses, percentages or coefficients: decimal.js in
+  code, `numeric` in the database.
+- Certificate key storage is deferred to Phase 2, and hosting is undecided. Do not
+  choose either without asking.
 - Replace this section with the real build, test and lint commands.
 
 ## Layout
