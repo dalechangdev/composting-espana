@@ -32,6 +32,7 @@ that connection.
 | [research/05-fuentes.md](research/05-fuentes.md) | Every source consulted, with links |
 | [research/sources/](research/sources/) | Text extracted from the official FEGA annexes (Anexo V, Anexo VI) |
 | [design/01-flujo-datos.md](design/01-flujo-datos.md) | Design sketch: actors, canonical objects, data flows, field mapping, components, phasing |
+| [design/02-lenguaje-ubicuo.md](design/02-lenguaje-ubicuo.md) | Ubiquitous language: bounded contexts, glossary per context, invariants, resolved ambiguities |
 
 Claims about the national schema are sourced in `research/`; everything in `design/`
 is proposal.
