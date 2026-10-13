@@ -264,6 +264,12 @@ compost bias, is the durable position.
 - In a co-official-language interface, are regulated terms such as *representación*
   translated or kept in Spanish? [02-lenguaje-ubicuo.md](02-lenguaje-ubicuo.md) §1
   rules only on Spanish and English.
+- Which municipality code does a parcel carry in the REA export? The local extract of
+  the Anexo V `REA` sheet (section 12, "Información de la Delimitación Gráfica")
+  describes it as the municipality "de la referencia SIGPAC", while the holder's
+  address fields use the INE list. If the two schemes differ, the demand surface (§4.C)
+  needs a sourced mapping before parcels can be joined to municipality boundaries.
+  Verify against Anexo V v3.11 and record in `research/`.
 - Does Scaleway hold the certifications a region may require (see the next item)?
   Unverified.
 - Does a region require a commercial CUE's own infrastructure to meet a named security
@@ -288,14 +294,28 @@ follows them.
 | Workspace layout | **Hybrid**: framework-free packages for pure domain logic, NestJS modules for everything else. Table below |
 | Authentication | **Better Auth**, running inside the backend, with users stored in our PostgreSQL through Prisma |
 | Certificate identity and signing | **AutoFirma** signature flow, validated by the backend |
-| Document storage | **Scaleway Object Storage**, reached over the S3 protocol |
+| Document storage | **Scaleway Object Storage** in the **Paris** region, reached over the S3 protocol |
 | API style | **REST**, with an **OpenAPI** contract generated from the NestJS backend and a typed client generated from that contract |
+| Client generator | **Orval** |
+| Front-end routing | **TanStack Router** |
+| Front-end data fetching | **TanStack Query** |
+| Tables | **TanStack Table** |
+| Maps | **MapLibre GL** |
+| Base map | **None at first**; later a Spain extract of OpenStreetMap as a single **Protomaps** file on Scaleway |
+| Municipality boundaries | The national mapping agency's (**CNIG**) official municipal boundary lines, loaded into PostGIS |
+| Component kit | **shadcn/ui**, which brings in **Tailwind CSS** |
+| Forms and validation | **React Hook Form** with **Zod** |
 | Backend testing | **Vitest**, with **Testcontainers** for a real PostgreSQL and **fast-check** for property-based tests |
 | Front-end testing | **Vitest** with **React Testing Library** for components; **Playwright** for end-to-end journeys |
 | Interface language | **Spanish** first; co-official languages added by launch region |
 | Translation library | **react-i18next**, with the browser's built-in number and date formatting |
 | Boundary enforcement | **eslint-plugin-boundaries** |
-| Hosting, Phases 0 and 1 | Backend as a **container** on **Render**; **Supabase** for PostgreSQL; EU region for both |
+| Code hosting | **GitHub** |
+| Continuous integration and deployment | **GitHub Actions** runs the checks; **Render** deploys once they pass |
+| Logging and error tracking | **Pino** structured logs; **Sentry**, EU-hosted, for errors |
+| Audit trail | **Append-only table** in PostgreSQL, written in the same transaction as the change |
+| Transactional email | **Scaleway Transactional Email** |
+| Hosting, Phases 0 and 1 | Backend as a **container** on **Render**; **Supabase** for PostgreSQL; both in **Frankfurt** |
 
 Consequences for the design:
 
@@ -373,6 +393,44 @@ Consequences for the design:
   client generated from it. A contract that is out of date with the backend should
   fail the build. Being language-neutral, the same contract is what a producer's or a
   cooperative's own software would integrate against.
+- **Orval generates more than the client.** From the OpenAPI contract it produces the
+  typed functions, the TanStack Query hooks the screens use, and mock handlers for the
+  component tests. All of it lands in `packages/api-client`.
+- **Filters live in the URL.** The demand surface is explored by municipality, crop
+  and window (§4.C); with TanStack Router those are typed URL parameters, so a view
+  can be linked to and reloaded.
+- **The demand surface is drawn without a base map at first.** Municipalities coloured
+  by demand read well on a plain background. When users need roads and towns for
+  orientation, a Spain-only OpenStreetMap extract is added as one Protomaps file in
+  Scaleway Object Storage, so the map depends on no outside service at runtime.
+- **Boundaries are reference data with a source.** The CNIG dataset's licence,
+  version and download date go in `research/05-fuentes.md` before it is loaded. It is
+  stored at full detail in PostGIS and simplified for display. Joining parcels to it
+  depends on the municipality-code question in §9.
+- **Interface components are ours to maintain.** shadcn/ui copies component source
+  into `apps/web`; it is not a dependency that updates itself.
+- **Form rules come from the API contract where they can.** Orval can generate Zod
+  schemas from the OpenAPI contract, so a form and the backend check the same rule.
+  Two rules from this design live in forms: exactly one of NIMA, NIF and REGA (§5),
+  and dose fields that accept a decimal comma.
+- **The database sits beside the backend.** Render and Supabase are both placed in
+  Frankfurt so that queries do not cross regions. Documents are in Paris, where the
+  distance does not matter. Confirm both providers still offer these regions.
+- **Migrations run before each release.** Prisma's migrations are applied as a step
+  of the Render deploy, before the new version starts, and a failed migration stops
+  the release.
+- **The product is Spain-only.** Maps, boundary data, locale handling and hosting
+  choices need to serve Spain and nothing else; nothing should be generalised for
+  other countries.
+- **The audit trail is domain data, not logging.** Every read or write made under a
+  `FarmLink`, every recommendation issued and every submission is recorded in an
+  append-only table with who acted, for which farm, under which `FarmLink`, and why.
+  It is written in the same transaction as the change it describes, so the two cannot
+  disagree. Logs go to Pino and may be discarded; audit rows may not.
+- **Logs must not carry personal data.** NIFs and document contents stay out of Pino
+  and Sentry; log the internal identifier instead.
+- **Tracing is deferred.** OpenTelemetry is added at Phase 2, when the system starts
+  calling IUWS itself and a request's path across regions is worth following.
 - **One test runner across the repository.** Vitest runs the packages, the backend and
   the front-end components. NestJS relies on decorator metadata that Vitest's default
   compiler does not emit, so the backend's test setup needs a compiler plugin; confirm
@@ -409,12 +467,7 @@ Deferred:
 
 Not yet decided:
 
-- Which Scaleway region holds the documents.
 - Which co-official languages are added, which follows from the launch regions.
-- Which tool generates the typed client from the OpenAPI contract.
-- Front-end libraries for routing, data fetching, tables and maps.
-- Continuous integration and deployment, logging and audit trail, transactional
-  email.
 
 ### Workspace layout
 

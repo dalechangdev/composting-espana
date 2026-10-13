@@ -11,8 +11,9 @@ or lint step yet.
 
 ## Planned stack
 
-Decided 2026-10-14, not yet scaffolded. Rationale and consequences are in
-`design/01-flujo-datos.md` §10; read it before scaffolding, and ask before scaffolding.
+Decided 2026-10-14, not yet scaffolded. The product is Spain-only. Rationale and
+consequences are in `design/01-flujo-datos.md` §10; read it before scaffolding, and ask
+before scaffolding.
 
 | Concern | Choice |
 |---|---|
@@ -27,14 +28,23 @@ Decided 2026-10-14, not yet scaffolded. Rationale and consequences are in
 | Decimal arithmetic | decimal.js |
 | Authentication | Better Auth, users in our PostgreSQL. Not Supabase Auth |
 | Certificate identity and signing | AutoFirma signature flow, validated by the backend |
-| Document storage | Scaleway Object Storage over the S3 protocol, behind one storage interface |
+| Document storage | Scaleway Object Storage (Paris) over the S3 protocol, behind one storage interface |
 | API style | REST; OpenAPI contract generated from NestJS; typed client generated from the contract |
+| Client generator | Orval, output to `packages/api-client` |
+| Front-end libraries | TanStack Router, TanStack Query, TanStack Table, MapLibre GL |
+| Component kit and forms | shadcn/ui with Tailwind CSS; React Hook Form with Zod |
+| Map data | No base map at first (later a Protomaps extract of Spain on Scaleway); CNIG municipal boundaries in PostGIS |
 | Backend testing | Vitest, Testcontainers (real PostgreSQL with PostGIS), fast-check |
 | Front-end testing | Vitest with React Testing Library; Playwright for end-to-end |
 | Interface language | Spanish first; co-official languages by launch region |
 | Translation library | react-i18next, with built-in `Intl` formatting |
 | Boundary enforcement | eslint-plugin-boundaries |
-| Hosting, Phases 0–1 | Container on Render (web service plus background worker); Supabase for PostgreSQL; EU region |
+| Code hosting | GitHub |
+| CI and deployment | GitHub Actions for checks; Render deploys once they pass; Prisma migrations run before each release |
+| Logging and errors | Pino; Sentry (EU-hosted) |
+| Audit trail | Append-only PostgreSQL table, written in the same transaction as the change |
+| Transactional email | Scaleway Transactional Email |
+| Hosting, Phases 0–1 | Container on Render (web service plus background worker); Supabase for PostgreSQL; both in Frankfurt |
 
 When code is added:
 
@@ -55,6 +65,11 @@ When code is added:
   Prisma. Use Vitest everywhere; do not add Jest.
 - No hard-coded user-facing text: every string goes through a translation key, with
   Spanish as the source language. Format numbers and dates with `Intl`, never by hand.
+- Anything done under a `FarmLink` writes an audit row in the same transaction. Audit
+  rows are never updated or deleted.
+- Never log NIFs or document contents; log internal identifiers.
+- Do not load the CNIG boundary dataset until its licence, version and download date
+  are recorded in `research/05-fuentes.md`.
 - Authentication establishes who a user is; only a `FarmLink` in the Representation
   module authorises acting for a farm. Do not put farm access in auth roles.
 - Trusted certificate issuers and accepted certificate types must come from an
