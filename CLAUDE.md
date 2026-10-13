@@ -27,14 +27,21 @@ Decided 2026-10-14, not yet scaffolded. Rationale and consequences are in
 | Decimal arithmetic | decimal.js |
 | Authentication | Better Auth, users in our PostgreSQL. Not Supabase Auth |
 | Certificate identity and signing | AutoFirma signature flow, validated by the backend |
+| Document storage | Scaleway Object Storage over the S3 protocol, behind one storage interface |
+| API style | REST; OpenAPI contract generated from NestJS; typed client generated from the contract |
+| Backend testing | Vitest, Testcontainers (real PostgreSQL with PostGIS), fast-check |
+| Front-end testing | Vitest with React Testing Library; Playwright for end-to-end |
+| Interface language | Spanish first; co-official languages by launch region |
+| Translation library | react-i18next, with built-in `Intl` formatting |
 | Boundary enforcement | eslint-plugin-boundaries |
-| Hosting, Phases 0–1 | Container on a managed platform; Supabase for PostgreSQL; EU region |
+| Hosting, Phases 0–1 | Container on Render (web service plus background worker); Supabase for PostgreSQL; EU region |
 
 When code is added:
 
 - Follow the workspace layout table in `design/01-flujo-datos.md` §10: `apps/api` with
   one NestJS module per bounded context, `apps/web`, and the framework-free packages
-  `packages/dosing`, `packages/catalogue` and `packages/shared-kernel`. `iuws` and
+  `packages/dosing`, `packages/catalogue`, `packages/shared-kernel` and the
+  generated `packages/api-client` (never edit it by hand). `iuws` and
   `identity` are technical modules, not contexts. Create a
   directory only when its phase starts. Do not extract another context into a package
   until it has a second consumer.
@@ -42,13 +49,18 @@ When code is added:
   anything, and add a term there before introducing a new domain word in code.
 - Never use JavaScript numbers for doses, percentages or coefficients: decimal.js in
   code, `numeric` in the database.
+- The front end calls the backend only through the generated client. Do not
+  hand-write API types or import from `apps/api`.
+- Test database code against a real PostgreSQL through Testcontainers, not a mocked
+  Prisma. Use Vitest everywhere; do not add Jest.
+- No hard-coded user-facing text: every string goes through a translation key, with
+  Spanish as the source language. Format numbers and dates with `Intl`, never by hand.
 - Authentication establishes who a user is; only a `FarmLink` in the Representation
   module authorises acting for a farm. Do not put farm access in auth roles.
 - Trusted certificate issuers and accepted certificate types must come from an
   official source. Do not hard-code a list from memory.
-- Certificate key storage and Phase 2 hosting are deferred, and the managed platform
-  for the backend is not chosen. Do not choose any of them without asking. Supabase is
-  the database only until decided otherwise.
+- Certificate key storage and Phase 2 hosting are deferred. Do not choose either
+  without asking. Supabase is the database only: no Supabase Auth or Storage.
 - Replace this section with the real build, test and lint commands.
 
 ## Layout

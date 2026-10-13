@@ -261,6 +261,11 @@ compost bias, is the durable position.
   Unverified; check before building the `identity` module's signing flow.
 - Which certificate issuers and certificate types (personal, company representative,
   DNIe) do we accept, and what is the official source for the trusted-issuer list?
+- In a co-official-language interface, are regulated terms such as *representación*
+  translated or kept in Spanish? [02-lenguaje-ubicuo.md](02-lenguaje-ubicuo.md) §1
+  rules only on Spanish and English.
+- Does Scaleway hold the certifications a region may require (see the next item)?
+  Unverified.
 - Does a region require a commercial CUE's own infrastructure to meet a named security
   standard under Anexo X? This decides hosting from Phase 2.
 
@@ -283,8 +288,14 @@ follows them.
 | Workspace layout | **Hybrid**: framework-free packages for pure domain logic, NestJS modules for everything else. Table below |
 | Authentication | **Better Auth**, running inside the backend, with users stored in our PostgreSQL through Prisma |
 | Certificate identity and signing | **AutoFirma** signature flow, validated by the backend |
+| Document storage | **Scaleway Object Storage**, reached over the S3 protocol |
+| API style | **REST**, with an **OpenAPI** contract generated from the NestJS backend and a typed client generated from that contract |
+| Backend testing | **Vitest**, with **Testcontainers** for a real PostgreSQL and **fast-check** for property-based tests |
+| Front-end testing | **Vitest** with **React Testing Library** for components; **Playwright** for end-to-end journeys |
+| Interface language | **Spanish** first; co-official languages added by launch region |
+| Translation library | **react-i18next**, with the browser's built-in number and date formatting |
 | Boundary enforcement | **eslint-plugin-boundaries** |
-| Hosting, Phases 0 and 1 | Backend as a **container** on a managed platform; **Supabase** for PostgreSQL; EU region |
+| Hosting, Phases 0 and 1 | Backend as a **container** on **Render**; **Supabase** for PostgreSQL; EU region for both |
 
 Consequences for the design:
 
@@ -300,10 +311,11 @@ Consequences for the design:
   restricts cross-context imports from the first commit. A module may import another
   only through its public entry point, and nothing imports `iuws` except Holding,
   Demand and Filing.
-- **Hosting must suit a long-lived process.** pg-boss workers poll continuously, so
-  the backend cannot run on a platform that scales to zero. Prisma and pg-boss both
-  hold database sessions, so check which Supabase connection mode each needs when
-  scaffolding.
+- **The backend runs as two Render services from one container image.** A web
+  service serves the API and a background worker runs the pg-boss jobs. The workers
+  poll continuously, so neither may be on a plan that suspends when idle. Prisma and
+  pg-boss both hold database sessions, so check which Supabase connection mode each
+  needs when scaffolding.
 - **Names in code come from the ubiquitous language.** Model objects use the English
   PascalCase names in 02 (`CompostBatch`, `FarmLink`); schema names (`Fertilizacion`,
   `CodigoDGC`) appear only in the modules that translate at the IUWS boundary.
@@ -340,11 +352,47 @@ Consequences for the design:
   installs. The expected certificate users are entidad habilitada staff at a desk,
   not farmers on a phone.
 - **No hosting constraint follows.** A signature flow needs no control over the TLS
-  connection, so it works on the managed platform chosen for Phases 0 and 1. Login by
+  connection, so it works on Render. Login by
   browser client certificate would need that control and is left for Phase 2, if
   users ask for it.
+- **Documents live outside the database.** Lab reports, delivery notes and signed
+  *representación* forms go to Scaleway Object Storage; PostgreSQL holds only their
+  references. The backend reaches the store through one storage interface, so the
+  provider can change without touching the contexts. Files are private and are served
+  through short-lived links the backend issues after its `FarmLink` check.
+- **Signed forms should be stored write-once.** A signed *representación* is evidence,
+  so its bucket should use versioning and object locking with a retention period.
+  Confirm Scaleway's current support, and the retention period required, when
+  scaffolding.
+- **Supabase is the database only.** Neither Supabase Auth nor Supabase Storage is
+  used.
 - **The front end is a client of the API only.** No server rendering; a public
   marketing site, if one is wanted, is a separate concern.
+- **The OpenAPI contract is the API's single description.** It is generated from the
+  backend, never written by hand, and the front end calls the API only through the
+  client generated from it. A contract that is out of date with the backend should
+  fail the build. Being language-neutral, the same contract is what a producer's or a
+  cooperative's own software would integrate against.
+- **One test runner across the repository.** Vitest runs the packages, the backend and
+  the front-end components. NestJS relies on decorator metadata that Vitest's default
+  compiler does not emit, so the backend's test setup needs a compiler plugin; confirm
+  the current recipe when scaffolding.
+- **Database tests run against a real PostgreSQL with PostGIS**, started by
+  Testcontainers, not against a mocked Prisma. The raw spatial SQL in Demand and the
+  transactional enqueue with pg-boss cannot be trusted otherwise.
+- **The dose engine's invariants are tested as properties.** fast-check generates
+  inputs to check rules that must hold for every case, above all that a recommended
+  dose never exceeds a legal ceiling (§4.E). These sit beside, not instead of, worked
+  examples an agronomist has approved.
+- **End-to-end tests are few and chosen.** Playwright covers the journeys where a
+  failure is costly, starting with resolving a rejected record (§4.F). AutoFirma is a
+  desktop application no browser test can drive, so the signing step is replaced by a
+  stand-in in tests and needs a manual check before release.
+- **No user-facing text is hard-coded.** Every string goes through a translation key
+  from the first screen, so adding a language is translation work, not a rewrite.
+- **Numbers and dates follow the user's locale.** Spanish uses a decimal comma, and a
+  misread dose is a real error, so no number is formatted or parsed by hand in the
+  front end. The API itself always exchanges locale-neutral values.
 
 Deferred:
 
@@ -361,10 +409,12 @@ Deferred:
 
 Not yet decided:
 
-- Which managed platform runs the backend container in Phases 0 and 1.
-- Whether Supabase Storage is used for documents such as lab reports, delivery notes
-  and signed *representación* forms. Supabase Auth is not used. Until decided,
-  Supabase is the database only.
+- Which Scaleway region holds the documents.
+- Which co-official languages are added, which follows from the launch regions.
+- Which tool generates the typed client from the OpenAPI contract.
+- Front-end libraries for routing, data fetching, tables and maps.
+- Continuous integration and deployment, logging and audit trail, transactional
+  email.
 
 ### Workspace layout
 
@@ -386,6 +436,7 @@ Directory names are English, following language rule 3 in
 | `packages/dosing` | Framework-free package | Dosing | Phase 1 |
 | `packages/catalogue` | Framework-free package | Catalogue | Phase 1 |
 | `packages/shared-kernel` | Framework-free package | none: shared value objects | Phase 0 |
+| `packages/api-client` | Generated package | none: typed client for the OpenAPI contract | Phase 0 |
 
 Build in phase order: the layout is fixed now, but a directory is created only when
 its phase starts.
@@ -404,4 +455,7 @@ its phase starts.
   AutoFirma signature validation, and answers one question: who is this user, and
   how strongly is that proven. It knows nothing about farms; Representation consumes
   its answer.
+- **`api-client` is generated output.** It is produced from the backend's OpenAPI
+  contract and is never edited by hand. `apps/web` depends on it and on nothing inside
+  `apps/api`.
 - **Soil Evidence has no module** until it has a canonical object (02 §8).

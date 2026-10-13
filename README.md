@@ -8,7 +8,9 @@ Spain, built on top of the *plan de abonado* obligation and the SIEX farm data s
 **Planned stack:** TypeScript in a pnpm workspace monorepo built with Turborepo; a
 NestJS backend using Prisma on PostgreSQL with PostGIS, pg-boss for durable jobs,
 decimal.js for dose arithmetic, and Better Auth for login with AutoFirma for Spanish
-digital certificates; a React front end built with Vite. See
+digital certificates, and Scaleway Object Storage for documents; a React front end
+built with Vite, in Spanish first, talking to the backend over REST. Tests run on
+Vitest and Playwright. See
 [design/01-flujo-datos.md](design/01-flujo-datos.md#10-implementation-stack).
 
 ## The idea
