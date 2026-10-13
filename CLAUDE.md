@@ -25,18 +25,23 @@ Decided 2026-10-14, not yet scaffolded. Rationale and consequences are in
 | Durable jobs | pg-boss |
 | Web front end | React single-page app on Vite |
 | Decimal arithmetic | decimal.js |
+| Boundary enforcement | eslint-plugin-boundaries |
+| Hosting, Phases 0–1 | Container on a managed platform; Supabase for PostgreSQL; EU region |
 
 When code is added:
 
-- One NestJS module per bounded context in `design/02-lenguaje-ubicuo.md`. Dosing and
-  Catalogue are standalone packages with no NestJS dependency. Do not extract another
-  context into a package until it has a second consumer.
+- Follow the workspace layout table in `design/01-flujo-datos.md` §10: `apps/api` with
+  one NestJS module per bounded context, `apps/web`, and the framework-free packages
+  `packages/dosing`, `packages/catalogue` and `packages/shared-kernel`. Create a
+  directory only when its phase starts. Do not extract another context into a package
+  until it has a second consumer.
 - Identifiers use that note's vocabulary. Check its "Avoid" columns before naming
   anything, and add a term there before introducing a new domain word in code.
 - Never use JavaScript numbers for doses, percentages or coefficients: decimal.js in
   code, `numeric` in the database.
-- Certificate key storage is deferred to Phase 2, and hosting is undecided. Do not
-  choose either without asking.
+- Certificate key storage and Phase 2 hosting are deferred, and the managed platform
+  for the backend is not chosen. Do not choose any of them without asking. Supabase is
+  the database only until decided otherwise.
 - Replace this section with the real build, test and lint commands.
 
 ## Layout

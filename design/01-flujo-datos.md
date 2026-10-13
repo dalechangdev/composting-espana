@@ -253,7 +253,10 @@ compost bias, is the durable position.
 - Anexo X: real cost and elapsed time to authorise a commercial CUE, per region.
 - Who is contractually liable for a wrong CUE entry we composed — us, the entidad, or
   the holder? This determines how much the dose engine may decide versus merely propose.
-- Implementation choices deferred or still open: see the end of §10.
+- Implementation choices deferred or still open: see "Deferred" and "Not yet decided"
+  in §10.
+- Does a region require a commercial CUE's own infrastructure to meet a named security
+  standard under Anexo X? This decides hosting from Phase 2.
 
 ## 10. Implementation stack
 
@@ -271,7 +274,9 @@ follows them.
 | Durable jobs | **pg-boss**, a job queue stored in PostgreSQL |
 | Web front end | **React** single-page app built with **Vite** |
 | Decimal arithmetic | **decimal.js** |
-| Workspace layout | **Hybrid**: framework-free packages for pure domain logic, NestJS modules for everything else |
+| Workspace layout | **Hybrid**: framework-free packages for pure domain logic, NestJS modules for everything else. Table below |
+| Boundary enforcement | **eslint-plugin-boundaries** |
+| Hosting, Phases 0 and 1 | Backend as a **container** on a managed platform; **Supabase** for PostgreSQL; EU region |
 
 Consequences for the design:
 
@@ -282,9 +287,15 @@ Consequences for the design:
   isolation and reused by the front end, and **Catalogue**, because Supply, Dosing and
   Filing all validate against it. Another context is extracted into a package only when
   it gains a second consumer.
-- **Module boundaries need enforcing.** Inside one app nothing stops one context's
-  module importing another's internals, so cross-context imports should be restricted
-  by a lint rule from the first commit.
+- **Module boundaries are enforced by lint.** Inside one app nothing stops one
+  context's module importing another's internals, so eslint-plugin-boundaries
+  restricts cross-context imports from the first commit. A module may import another
+  only through its public entry point, and nothing imports `iuws` except Holding,
+  Demand and Filing.
+- **Hosting must suit a long-lived process.** pg-boss workers poll continuously, so
+  the backend cannot run on a platform that scales to zero. Prisma and pg-boss both
+  hold database sessions, so check which Supabase connection mode each needs when
+  scaffolding.
 - **Names in code come from the ubiquitous language.** Model objects use the English
   PascalCase names in 02 (`CompostBatch`, `FarmLink`); schema names (`Fertilizacion`,
   `CodigoDGC`) appear only in the modules that translate at the IUWS boundary.
@@ -311,8 +322,48 @@ Deferred:
   into the backend process at start, behind an interface so that a proxy or a
   hardware-backed key can replace it.
 
+- **Hosting from Phase 2.** It depends on the key-storage decision above and on what
+  security requirements a region imposes on a commercial CUE under Anexo X, which the
+  research does not yet establish. Keeping the backend a plain container (below) is
+  what makes this deferrable.
+
 Not yet decided:
 
-- The package and module list beyond Dosing and Catalogue, and the directory names.
-- Which lint rule enforces module boundaries.
-- Hosting, which the key-storage decision above will constrain.
+- Which managed platform runs the backend container in Phases 0 and 1.
+- Whether Supabase is used for anything beyond PostgreSQL. Until decided, it is the
+  database only.
+
+### Workspace layout
+
+Directory names are English, following language rule 3 in
+[02-lenguaje-ubicuo.md](02-lenguaje-ubicuo.md) §1.
+
+| Path | What it is | Bounded context | First needed |
+|---|---|---|---|
+| `apps/api` | The NestJS backend | — | Phase 0 |
+| `apps/api/src/holding` | NestJS module | Holding | Phase 0 |
+| `apps/api/src/demand` | NestJS module | Demand | Phase 0 |
+| `apps/api/src/representation` | NestJS module | Representation | Phase 0 |
+| `apps/api/src/supply` | NestJS module | Supply | Phase 1 |
+| `apps/api/src/fulfilment` | NestJS module | Fulfilment | Phase 1 |
+| `apps/api/src/filing` | NestJS module | Filing | Phase 1 |
+| `apps/api/src/iuws` | NestJS module | none: transport only | Phase 2 |
+| `apps/web` | The React front end | — | Phase 0 |
+| `packages/dosing` | Framework-free package | Dosing | Phase 1 |
+| `packages/catalogue` | Framework-free package | Catalogue | Phase 1 |
+| `packages/shared-kernel` | Framework-free package | none: shared value objects | Phase 0 |
+
+Build in phase order: the layout is fixed now, but a directory is created only when
+its phase starts.
+
+- **`iuws` is transport, not translation.** It owns the per-region endpoint registry,
+  the certificate and the JWT lifecycle (the "IUWS client" of §6). Translating between
+  schema names and our terms stays in Holding, Demand and Filing, as 02 §2 requires.
+  It is not needed before Phase 2: in Phase 0 the partner's exports arrive as files and
+  are loaded through an import path in Holding and Demand, and in Phase 1 Filing
+  composes payloads that the partner posts (§8).
+- **`shared-kernel` holds value objects only**: regulated identifiers, units and
+  decimal quantities that more than one context must agree on. No entities, no
+  services, no NestJS. Anything added to it needs a reason two contexts cannot each
+  own their copy.
+- **Soil Evidence has no module** until it has a canonical object (02 §8).
