@@ -255,6 +255,12 @@ compost bias, is the durable position.
   the holder? This determines how much the dose engine may decide versus merely propose.
 - Implementation choices deferred or still open: see "Deferred" and "Not yet decided"
   in §10.
+- What evidence of *representación* does each launch region accept, and does a
+  document signed with AutoFirma qualify? Not covered by the research.
+- May a private company's site integrate AutoFirma, and under what licence terms?
+  Unverified; check before building the `identity` module's signing flow.
+- Which certificate issuers and certificate types (personal, company representative,
+  DNIe) do we accept, and what is the official source for the trusted-issuer list?
 - Does a region require a commercial CUE's own infrastructure to meet a named security
   standard under Anexo X? This decides hosting from Phase 2.
 
@@ -275,6 +281,8 @@ follows them.
 | Web front end | **React** single-page app built with **Vite** |
 | Decimal arithmetic | **decimal.js** |
 | Workspace layout | **Hybrid**: framework-free packages for pure domain logic, NestJS modules for everything else. Table below |
+| Authentication | **Better Auth**, running inside the backend, with users stored in our PostgreSQL through Prisma |
+| Certificate identity and signing | **AutoFirma** signature flow, validated by the backend |
 | Boundary enforcement | **eslint-plugin-boundaries** |
 | Hosting, Phases 0 and 1 | Backend as a **container** on a managed platform; **Supabase** for PostgreSQL; EU region |
 
@@ -311,6 +319,30 @@ Consequences for the design:
   columns as first-class types, so the demand surface's (§4.C) spatial columns and
   queries will likely go through raw SQL. Verify against the Prisma version in use
   when scaffolding, and keep that SQL inside the Demand module.
+- **Authentication says who; Representation says what for.** Better Auth establishes
+  a user's identity and their membership of a producer or an entidad habilitada.
+  Whether that user may read or write for a given farm is decided only by a
+  `FarmLink` in the Representation module (§4.A), never by an auth role alone.
+- **Certificates supplement password login; they do not replace it.** Every account
+  can sign in with a password and a second factor. A user who holds a Spanish digital
+  certificate can additionally sign a challenge with AutoFirma; once the backend has
+  validated that signature, the certificate's identity is attached to the account as
+  a stronger proof.
+- **The same flow can sign documents.** Because AutoFirma produces a signature, not
+  just a login, it can be used to sign a *representación* and keep the signed
+  document as evidence beside its `FarmLink`. Whether a region accepts a document
+  signed this way is not established (§9), so this is a capability, not yet a flow.
+- **Signature validation is ours to get right.** The backend checks the issuer,
+  revocation status and certificate type of every signature. The list of trusted
+  issuers and the accepted certificate types must come from an official source, not
+  from a constant in code (§9).
+- **Certificate support is desktop-first.** AutoFirma is an application the user
+  installs. The expected certificate users are entidad habilitada staff at a desk,
+  not farmers on a phone.
+- **No hosting constraint follows.** A signature flow needs no control over the TLS
+  connection, so it works on the managed platform chosen for Phases 0 and 1. Login by
+  browser client certificate would need that control and is left for Phase 2, if
+  users ask for it.
 - **The front end is a client of the API only.** No server rendering; a public
   marketing site, if one is wanted, is a separate concern.
 
@@ -330,8 +362,9 @@ Deferred:
 Not yet decided:
 
 - Which managed platform runs the backend container in Phases 0 and 1.
-- Whether Supabase is used for anything beyond PostgreSQL. Until decided, it is the
-  database only.
+- Whether Supabase Storage is used for documents such as lab reports, delivery notes
+  and signed *representación* forms. Supabase Auth is not used. Until decided,
+  Supabase is the database only.
 
 ### Workspace layout
 
@@ -344,6 +377,7 @@ Directory names are English, following language rule 3 in
 | `apps/api/src/holding` | NestJS module | Holding | Phase 0 |
 | `apps/api/src/demand` | NestJS module | Demand | Phase 0 |
 | `apps/api/src/representation` | NestJS module | Representation | Phase 0 |
+| `apps/api/src/identity` | NestJS module | none: authentication and signature validation | Phase 0 |
 | `apps/api/src/supply` | NestJS module | Supply | Phase 1 |
 | `apps/api/src/fulfilment` | NestJS module | Fulfilment | Phase 1 |
 | `apps/api/src/filing` | NestJS module | Filing | Phase 1 |
@@ -366,4 +400,8 @@ its phase starts.
   decimal quantities that more than one context must agree on. No entities, no
   services, no NestJS. Anything added to it needs a reason two contexts cannot each
   own their copy.
+- **`identity` is not a bounded context either.** It wraps Better Auth and the
+  AutoFirma signature validation, and answers one question: who is this user, and
+  how strongly is that proven. It knows nothing about farms; Representation consumes
+  its answer.
 - **Soil Evidence has no module** until it has a canonical object (02 §8).

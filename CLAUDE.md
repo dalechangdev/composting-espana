@@ -25,6 +25,8 @@ Decided 2026-10-14, not yet scaffolded. Rationale and consequences are in
 | Durable jobs | pg-boss |
 | Web front end | React single-page app on Vite |
 | Decimal arithmetic | decimal.js |
+| Authentication | Better Auth, users in our PostgreSQL. Not Supabase Auth |
+| Certificate identity and signing | AutoFirma signature flow, validated by the backend |
 | Boundary enforcement | eslint-plugin-boundaries |
 | Hosting, Phases 0–1 | Container on a managed platform; Supabase for PostgreSQL; EU region |
 
@@ -32,13 +34,18 @@ When code is added:
 
 - Follow the workspace layout table in `design/01-flujo-datos.md` §10: `apps/api` with
   one NestJS module per bounded context, `apps/web`, and the framework-free packages
-  `packages/dosing`, `packages/catalogue` and `packages/shared-kernel`. Create a
+  `packages/dosing`, `packages/catalogue` and `packages/shared-kernel`. `iuws` and
+  `identity` are technical modules, not contexts. Create a
   directory only when its phase starts. Do not extract another context into a package
   until it has a second consumer.
 - Identifiers use that note's vocabulary. Check its "Avoid" columns before naming
   anything, and add a term there before introducing a new domain word in code.
 - Never use JavaScript numbers for doses, percentages or coefficients: decimal.js in
   code, `numeric` in the database.
+- Authentication establishes who a user is; only a `FarmLink` in the Representation
+  module authorises acting for a farm. Do not put farm access in auth roles.
+- Trusted certificate issuers and accepted certificate types must come from an
+  official source. Do not hard-code a list from memory.
 - Certificate key storage and Phase 2 hosting are deferred, and the managed platform
   for the backend is not chosen. Do not choose any of them without asking. Supabase is
   the database only until decided otherwise.
